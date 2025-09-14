@@ -129,4 +129,8 @@ dist
 tmp/
 temp/
 
-#
+# PDF files
+*.pdf
+
+# HTML files
+*.html
