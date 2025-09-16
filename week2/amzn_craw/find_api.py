@@ -92,7 +92,7 @@ data = {
 
 """ same product diff page """
 
-cookies = {
+cookies_same_product_page3 = {
     'ubid-main': '135-9735178-2965835',
     'aws-target-data': '%7B%22support%22%3A%221%22%7D',
     'regStatus': 'registered',
@@ -117,7 +117,7 @@ cookies = {
     'rxc': 'ANseot7arc9w2MGTr2A',
 }
 
-headers = {
+headers_same_product_page3 = {
     'accept': 'text/html,*/*',
     'accept-language': 'en-US,en;q=0.9',
     'anti-csrftoken-a2z': 'hMAbVqq7brhAsDc%2F792GzBQSpoABjQR9ASo3Yq6wmrwjAAAAAGjJjBgAAAAB',
@@ -148,7 +148,7 @@ headers = {
     # 'cookie': 'ubid-main=135-9735178-2965835; aws-target-data=%7B%22support%22%3A%221%22%7D; regStatus=registered; session-id=130-8483115-7485730; remember-account=true; aws-userInfo=%7B%22arn%22%3A%22arn%3Aaws%3Aiam%3A%3A047276618994%3Aroot%22%2C%22alias%22%3A%22%22%2C%22username%22%3A%22Yuxian%22%2C%22keybase%22%3A%22%22%2C%22issuer%22%3A%22http%3A%2F%2Fsignin.aws.amazon.com%2Fsignin%22%2C%22signinType%22%3A%22PUBLIC%22%7D; i18n-prefs=USD; lc-main=en_US; kndctr_7742037254C95E840A4C98A6_AdobeOrg_consent=general=in; kndctr_7742037254C95E840A4C98A6_AdobeOrg_identity=CiY1NDg5OTE0NjMzNDExNzA3ODIxMDAzODY3MDU1ODkxMjU5Mjg4MlISCJCrg5LyMhABGAEqA1ZBNjAA8AHwrd2i-TI=; aws-target-visitor-id=1717359572436-390315.44_0; AMCV_7742037254C95E840A4C98A6%40AdobeOrg=1585540135%7CMCIDTS%7C20289%7CMCMID%7C11830691514499522683169632618378224020%7CMCAAMLH-1753529570%7C7%7CMCAAMB-1753529570%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1752931970s%7CNONE%7CMCAID%7CNONE%7CvVersion%7C4.4.0; csd-key=eyJ3YXNtVGVzdGVkIjp0cnVlLCJ3YXNtQ29tcGF0aWJsZSI6dHJ1ZSwid2ViQ3J5cHRvVGVzdGVkIjpmYWxzZSwidiI6MSwia2lkIjoiYjBjNzMxIiwia2V5IjoiU1gxdG9FM2wxTTFrSFFjaTM5QkNoQTdneEJmY0tjY0g0NndaTVhDdlpaRzBLU09UUnM4ODJqVGRYVVNsdk5yTlBCMDV4QlZpV2M4RFRicUpCalB5b2pxbkl5T09FN2J4U0NrQ1lYQWFjS3FpZlVreVh4d2FFRjcvdnpxVnBOUk1FTlUwYjdLVXRIbHFRRVJUblZsa2tOWE9qRCtQOWx2V2ZUM2FSdzdFakk5UVRaTVZWZ0kwdEZnd0tqWjFyOWppajZadmx3STBSa09HdHkrSlh5MXdRcHR6Q0pOTTZvOUUzNUd5QVRsQzRFSXBBMFRHdlRuOHNsUlRQSEREN3laRVRicnNmczE2ZzVpRm5DNUFqQzBPbUkxTm82ck85cGRNd2JJa2hVT2RBY3pIaGtmWWF6MlpFSjRIVlNNc25iYkVwS05DckttQlQ1STBOV2luVlZIeWJnPT0ifQ==; skin=noskin; at-main=Atza|IwEBIFMcBIeWNJD24EbyL58q-9Sf-GXh-XJerrOKTEfEBBX5d89uzqCCYoI_tYxauLhQ_vNnbeANm1ZNIVLGqRcDNhIBtH7ae6DK4AGiVjQSZEkvsr6DkglZgoIkZ2pMnR6fZYtHhnKVH8xg_cFDryBL2Me8Saf_IAOp-ZADrBhAgGq6whWHNpRc-4pQ-_kyezd3trTcb1VGduBNdwDEY5QW8SZT53iluChQ37nlZ8-BLRIQjw; sess-at-main="nzStb8hih3+f+wKctBfVXfycma4U8iXxKOjmHfPpMB0="; sst-main=Sst1|PQEA5zLUWUKMdQA3doj38m3sDKiLICyIqP3MvZjOKNn4tEzAkyKh2NU6TG_h0qPlJWQhnNmZKuQXtEQBPf-itO1-VQnTkt1-Xdjja_hpIYXgCnuaO4EuSDf1zXnkWVLpYkkDYSLuKbjx-VwCz76qfZmaK3v8jwZPLBEV9LWKovz4CK1CTI1tHAVrxQlst9gW9tIp4zVegZRFK8IREUZKdtVkjXaZ-6gqalsfUQvw1aobcnO6V1kfJpv-Dkm8WlFrByI-QZUsFzRqSopZndYKsaXqJTNFmC9xjhEbBa8GjfN5O3_I4OaQtlzZ3WD7Ji13AMu4Y57WexmweeDY-qjhJ4wXTA1rruj2iWkNMLHBr5mrspo; session-id-time=2082787201l; session-token=EhZuWEgH3DmUHddZARCaU+jwXe/Dub7Zys2SNQOwwHl4IBeqZUkj0w7Rysvts3qUTTc5yTbHtTCvqRG67lwk+Vo/R3mCA9ZTw3Mn55tZYOIeN/Uisav5Pj/oP/B7qk063NX4T24SDNmTYJyHabF+jKrfWomM5zRx3iSB0B9WQESf2qgM8BAxl//F2xbOhf2IJGYSt37BXGpW5kmIJ87sJOSsl1IFXIykuQYpaMrEQLg8E7r/tzw7CC8B5amor71WSCRg8L2WhAqmqE8Xrqf492eQdgpKNV0PSvMftT3/O8Sy0+bapWUGwu67tPpaqB/9ksfZlIKYIlcPxqC3rk2Nf9KbIx1zux1YJPYNuv1h4HBl9q3NZ+QV53inWiKBtFYU; x-main="xgK1a0Wb3Az?dpzoCJZjKi8YvMW99fOT189hBlYN4UW763A3qheCmC9WrjNCGg2O"; csm-hit=tb:RFT6GNRWBV1F2VQ5TWPY+sa-RFT6GNRWBV1F2VQ5TWPY-VGQB4KWK4032VV53CJ5S|1758039075740&t:1758039075740&adb:adblk_no; rxc=ANseot7arc9w2MGTr2A',
 }
 
-data = {
+data_same_product_page3 = {
     'sortBy': '',
     'reviewerType': 'all_reviews',
     'formatType': '',
@@ -171,7 +171,7 @@ data = {
 https://www.amazon.com/product-reviews/B0CQM9M4YH/ref=cm_cr_getr_d_paging_btm_prev_1?ie=UTF8&reviewerType=all_reviews&pageNumber=1
 """
 
-cookies = {
+cookies_diff_product_page1 = {
     'ubid-main': '135-9735178-2965835',
     'aws-target-data': '%7B%22support%22%3A%221%22%7D',
     'regStatus': 'registered',
@@ -196,7 +196,7 @@ cookies = {
     'rxc': 'ANseot5vrc9w2MGTr2A',
 }
 
-headers = {
+headers_diff_product_page1 = {
     'accept': 'text/html,*/*',
     'accept-language': 'en-US,en;q=0.9',
     'anti-csrftoken-a2z': 'hOkIV7M6oABq7%2FSh0f9bPzlOalMCLVtNbiBZKedtXKl2AAAAAGjJbZIAAAAB',
@@ -227,7 +227,7 @@ headers = {
     # 'cookie': 'ubid-main=135-9735178-2965835; aws-target-data=%7B%22support%22%3A%221%22%7D; regStatus=registered; session-id=130-8483115-7485730; remember-account=true; aws-userInfo=%7B%22arn%22%3A%22arn%3Aaws%3Aiam%3A%3A047276618994%3Aroot%22%2C%22alias%22%3A%22%22%2C%22username%22%3A%22Yuxian%22%2C%22keybase%22%3A%22%22%2C%22issuer%22%3A%22http%3A%2F%2Fsignin.aws.amazon.com%2Fsignin%22%2C%22signinType%22%3A%22PUBLIC%22%7D; i18n-prefs=USD; lc-main=en_US; kndctr_7742037254C95E840A4C98A6_AdobeOrg_consent=general=in; kndctr_7742037254C95E840A4C98A6_AdobeOrg_identity=CiY1NDg5OTE0NjMzNDExNzA3ODIxMDAzODY3MDU1ODkxMjU5Mjg4MlISCJCrg5LyMhABGAEqA1ZBNjAA8AHwrd2i-TI=; aws-target-visitor-id=1717359572436-390315.44_0; AMCV_7742037254C95E840A4C98A6%40AdobeOrg=1585540135%7CMCIDTS%7C20289%7CMCMID%7C11830691514499522683169632618378224020%7CMCAAMLH-1753529570%7C7%7CMCAAMB-1753529570%7CRKhpRz8krg2tLO6pguXWp5olkAcUniQYPHaMWWgdJ3xzPWQmdj0y%7CMCOPTOUT-1752931970s%7CNONE%7CMCAID%7CNONE%7CvVersion%7C4.4.0; csd-key=eyJ3YXNtVGVzdGVkIjp0cnVlLCJ3YXNtQ29tcGF0aWJsZSI6dHJ1ZSwid2ViQ3J5cHRvVGVzdGVkIjpmYWxzZSwidiI6MSwia2lkIjoiYjBjNzMxIiwia2V5IjoiU1gxdG9FM2wxTTFrSFFjaTM5QkNoQTdneEJmY0tjY0g0NndaTVhDdlpaRzBLU09UUnM4ODJqVGRYVVNsdk5yTlBCMDV4QlZpV2M4RFRicUpCalB5b2pxbkl5T09FN2J4U0NrQ1lYQWFjS3FpZlVreVh4d2FFRjcvdnpxVnBOUk1FTlUwYjdLVXRIbHFRRVJUblZsa2tOWE9qRCtQOWx2V2ZUM2FSdzdFakk5UVRaTVZWZ0kwdEZnd0tqWjFyOWppajZadmx3STBSa09HdHkrSlh5MXdRcHR6Q0pOTTZvOUUzNUd5QVRsQzRFSXBBMFRHdlRuOHNsUlRQSEREN3laRVRicnNmczE2ZzVpRm5DNUFqQzBPbUkxTm82ck85cGRNd2JJa2hVT2RBY3pIaGtmWWF6MlpFSjRIVlNNc25iYkVwS05DckttQlQ1STBOV2luVlZIeWJnPT0ifQ==; skin=noskin; at-main=Atza|IwEBIFMcBIeWNJD24EbyL58q-9Sf-GXh-XJerrOKTEfEBBX5d89uzqCCYoI_tYxauLhQ_vNnbeANm1ZNIVLGqRcDNhIBtH7ae6DK4AGiVjQSZEkvsr6DkglZgoIkZ2pMnR6fZYtHhnKVH8xg_cFDryBL2Me8Saf_IAOp-ZADrBhAgGq6whWHNpRc-4pQ-_kyezd3trTcb1VGduBNdwDEY5QW8SZT53iluChQ37nlZ8-BLRIQjw; sess-at-main="nzStb8hih3+f+wKctBfVXfycma4U8iXxKOjmHfPpMB0="; sst-main=Sst1|PQEA5zLUWUKMdQA3doj38m3sDKiLICyIqP3MvZjOKNn4tEzAkyKh2NU6TG_h0qPlJWQhnNmZKuQXtEQBPf-itO1-VQnTkt1-Xdjja_hpIYXgCnuaO4EuSDf1zXnkWVLpYkkDYSLuKbjx-VwCz76qfZmaK3v8jwZPLBEV9LWKovz4CK1CTI1tHAVrxQlst9gW9tIp4zVegZRFK8IREUZKdtVkjXaZ-6gqalsfUQvw1aobcnO6V1kfJpv-Dkm8WlFrByI-QZUsFzRqSopZndYKsaXqJTNFmC9xjhEbBa8GjfN5O3_I4OaQtlzZ3WD7Ji13AMu4Y57WexmweeDY-qjhJ4wXTA1rruj2iWkNMLHBr5mrspo; session-id-time=2082787201l; session-token=EhZuWEgH3DmUHddZARCaU+jwXe/Dub7Zys2SNQOwwHl4IBeqZUkj0w7Rysvts3qUTTc5yTbHtTCvqRG67lwk+Vo/R3mCA9ZTw3Mn55tZYOIeN/Uisav5Pj/oP/B7qk063NX4T24SDNmTYJyHabF+jKrfWomM5zRx3iSB0B9WQESf2qgM8BAxl//F2xbOhf2IJGYSt37BXGpW5kmIJ87sJOSsl1IFXIykuQYpaMrEQLg8E7r/tzw7CC8B5amor71WSCRg8L2WhAqmqE8Xrqf492eQdgpKNV0PSvMftT3/O8Sy0+bapWUGwu67tPpaqB/9ksfZlIKYIlcPxqC3rk2Nf9KbIx1zux1YJPYNuv1h4HBl9q3NZ+QV53inWiKBtFYU; x-main="xgK1a0Wb3Az?dpzoCJZjKi8YvMW99fOT189hBlYN4UW763A3qheCmC9WrjNCGg2O"; csm-hit=tb:5ATMRGFRQEC9MZTRXPQR+sa-SD5EHVHX2Q06QJ2VEHW5-NATZ8JBHSCF8MNJZ1B13|1758039178926&t:1758039178926&adb:adblk_no; rxc=ANseot5vrc9w2MGTr2A',
 }
 
-data = {
+data_diff_product_page1 = {
     'sortBy': '',
     'reviewerType': 'all_reviews',
     'formatType': '',
@@ -262,6 +262,10 @@ def run_request(cookies_override=None, headers_override=None, data_override=None
         data=used_data,
     )
     return resp.text
+
+
+if __name__ == "__main__":
+    print(run_request())
 
 # """
 # # cookies = {
@@ -346,5 +350,3 @@ def run_request(cookies_override=None, headers_override=None, data_override=None
 #     data=data,
 # )
 # """
-if __name__ == "__main__":
-    print(run_request())
