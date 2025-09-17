@@ -5,6 +5,7 @@ import re
 from typing import List, Dict, Any
 
 from bs4 import BeautifulSoup
+import requests
 
 
 def _extract_text_with_br(span: BeautifulSoup) -> str:
@@ -70,7 +71,45 @@ def _read_file(path: str) -> str:
         return f.read()
 
 
+def fetch_reviews_and_token(
+    asin: str,
+    cookies: Dict[str, str],
+    headers: Dict[str, str],
+    params: Dict[str, str],
+) -> tuple[List[Dict[str, Any]], str | None]:
+    """Fetch product reviews page and return (parsed_reviews, lazyWidgetCsrfToken).
+
+    Performs:
+    response = requests.get(
+        f'https://www.amazon.com/product-reviews/{ASIN}/ref=cm_cr_dp_d_show_all_btm',
+        params=params,
+        cookies=cookies,
+        headers=headers,
+    )
+    Then parses response.text via parse_reviews and extracts lazyWidgetCsrfToken.
+    """
+    url = f"https://www.amazon.com/product-reviews/{asin}/ref=cm_cr_dp_d_show_all_btm"
+    response = requests.get(url, params=params, cookies=cookies, headers=headers)
+    html = response.text
+
+    token: str | None = None
+    token_patterns = [
+        r'"lazyWidgetCsrfToken"\s*:\s*"([^"]+)"',
+        r'lazyWidgetCsrfToken\s*[:=]\s*\"([^\"]+)\"',
+    ]
+    for pattern in token_patterns:
+        m = re.search(pattern, html)
+        if m:
+            token = m.group(1)
+            break
+
+    return parse_reviews(html), token
+
+
 if __name__ == "__main__":
+    # This constructs the path to the HTML file by replacing the current Python file name
+    # with "find_fields.html" in the same directory. If this file is 
+    # "week2/amzn_craw/scraw_amazon.py", it becomes "week2/amzn_craw/find_fields.html"
     html_path = __file__.replace("scraw_amazon.py", "find_fields.html")
     try:
         html_content = _read_file(html_path)
