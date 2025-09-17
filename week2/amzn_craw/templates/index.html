@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Amazon Review Crawler</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; }
+      .card { max-width: 720px; margin: 0 auto; padding: 1.5rem; border: 1px solid #ddd; border-radius: 8px; }
+      label { display:block; margin:.5rem 0 .25rem; font-weight:600; }
+      input, select { width: 100%; padding: .5rem; font-size: 1rem; }
+      button { margin-top: 1rem; padding: .6rem 1rem; font-size: 1rem; cursor: pointer; }
+      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Amazon Review Crawler</h1>
+      <form method="post">
+        <label for="keyword">Keyword</label>
+        <input id="keyword" name="keyword" placeholder="e.g. bed sheets" required>
+
+        <div class="grid">
+          <div>
+            <label for="num_products">Number of products</label>
+            <input id="num_products" name="num_products" type="number" min="1" max="10" value="3">
+          </div>
+          <div>
+            <label for="num_pages">Pages per product</label>
+            <input id="num_pages" name="num_pages" type="number" min="1" max="10" value="1">
+          </div>
+        </div>
+
+        <label for="star">Stars (optional)</label>
+        <select id="star" name="star">
+          <option value="">All</option>
+          <option value="5">5 stars</option>
+          <option value="4">4 stars</option>
+          <option value="3">3 stars</option>
+          <option value="2">2 stars</option>
+          <option value="1">1 star</option>
+        </select>
+
+
+        <button type="submit">Crawl</button>
+      </form>
+    </div>
+  </body>
+  </html>
+
+

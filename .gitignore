@@ -134,3 +134,7 @@ temp/
 
 # HTML files
 *.html
+
+# Exception: Allow HTML templates for web interfaces
+!week2/amzn_craw/templates/*.html
+!**/templates/*.html

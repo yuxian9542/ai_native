@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Results - Amazon Review Crawler</title>
+    <style>
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 2rem; }
+      .meta { color:#555; margin-bottom:1rem; }
+      .actions { margin-bottom: 1rem; }
+      .btn { display:inline-block; padding:.5rem .8rem; border:1px solid #666; border-radius:6px; text-decoration:none; color:#111; background:#f5f5f5; }
+      .asin { margin: 1.5rem 0; padding:1rem; border:1px solid #ddd; border-radius:8px; }
+      .asin-grid { display:flex; gap: 16px; align-items: flex-start; }
+      .muted { color:#666; font-size:.9rem; }
+      .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:.9rem; }
+      .scroll { max-height: 420px; overflow: auto; border:1px solid #eee; border-radius:6px; }
+      table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+      thead th { position: sticky; top: 0; background: #fafafa; z-index: 1; }
+      th, td { padding: .5rem .6rem; border-bottom: 1px solid #eee; vertical-align: top; text-align: left; }
+      td.content { white-space: pre-wrap; word-break: break-word; }
+      .prod { display:flex; flex-direction: column; align-items:center; gap: 8px; }
+      .prod img { width:200px; height: auto; object-fit: contain; border: 1px solid #eee; border-radius: 6px; }
+      .title { font-weight: 600; margin-bottom: .25rem; }
+      .count { width: 3rem; text-align: right; }
+    </style>
+  </head>
+  <body>
+    <h1>Results</h1>
+    <div class="actions">
+      <a class="btn" href="/">← Back to search</a>
+    </div>
+    <div class="meta">
+      Keyword: <span class="code">{{ keyword }}</span> ·
+      Products: {{ num_products }} ·
+      Pages: {{ num_pages }} ·
+      Stars: {{ star if star else 'All' }}
+    </div>
+
+    {% for asin, data in results.items() %}
+      <div class="asin">
+        {% set product = data.get('product', {}) %}
+        {% set reviews = data.get('comments', []) %}
+        {% if product and product.name %}
+        <h2 class="title"><a href="{{ product.link or '#' }}" target="_blank" rel="noopener">{{ product.name }}</a></h2>
+        {% endif %}
+        <div class="asin-grid">
+          <div style="min-width:240px; max-width:240px;">
+            {% if product %}
+            <div class="prod" style="margin-bottom:12px;">
+              {% if product.image %}
+                <a href="{{ product.link or '#' }}" target="_blank" rel="noopener">
+                  <img src="{{ product.image }}" alt="{{ product.name }}">
+                </a>
+              {% endif %}
+              <!-- name removed beneath image -->
+            </div>
+            {% endif %}
+          </div>
+          <div style="flex:1;">
+          {% if reviews %}
+            <div class="scroll">
+              <table>
+              <thead>
+                <tr>
+                  <th class="count">#</th>
+                  <th>Content</th>
+                  <th>Star</th>
+                  <th>Date</th>
+                  <th>Reviewer</th>
+                  <th>Verified</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for r in reviews %}
+                <tr>
+                  <td class="count">{{ loop.index }}</td>
+                  <td class="content">{{ r.get('content','')|safe }}</td>
+                  <td>{{ r.get('star') }}</td>
+                  <td>{{ r.get('review_date') }}</td>
+                  <td>{{ r.get('reviewer') }}</td>
+                  <td>{{ r.get('verified_purchase') }}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="muted">No reviews found.</div>
+          {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+
+    <div class="actions">
+      <a class="btn" href="/">← Back to search</a>
+    </div>
+  </body>
+  </html>
+
+
