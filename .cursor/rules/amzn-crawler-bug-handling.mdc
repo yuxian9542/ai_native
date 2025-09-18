@@ -1,0 +1,373 @@
+---
+globs: week2/amzn_craw/**
+---
+
+# Bug Handling and Debugging Guide
+
+## Common Issues and Solutions
+
+### 1. AJAX Parsing Problems (Critical)
+**Symptom**: Only extracting partial reviews (e.g., 5 out of 10 from [test.jax](mdc:week2/test.jax))
+
+**Root Cause**: Incorrect regex patterns in `parse_reviews_ajax()`
+
+**Solution**:
+```python
+# CORRECT regex pattern - handles escaped quotes and multiline content
+append_pattern = r'\[\s*"append"\s*,\s*"#cm_cr-review_list"\s*,\s*"((?:[^"\\]|\\.)*)"\s*\]'
+
+# MUST include re.DOTALL flag
+matches = re.finditer(pattern, text, re.DOTALL)
+
+# Proper JSON unescaping sequence
+part = part.replace('\\"', '"').replace('\\n', '\n').replace('\\/', '/').replace('\\\\', '\\')
+```
+
+**Debugging Steps**:
+1. Enable debug mode: `parse_reviews_ajax(text, debug=True)`
+2. Check pattern match count in logs
+3. Verify HTML part extraction length
+4. Test fallback mechanism with `li[data-hook="review"]` selector
+
+### 2. Zero Reviews Extracted
+**Symptom**: Functions return empty review lists
+
+**Common Causes**:
+- File format misidentification (AJAX vs HTML)
+- Incorrect BeautifulSoup selectors
+- Missing or malformed HTML structure
+
+**Debugging Approach**:
+```python
+# In extract_reviews_from_jax_file()
+def extract_reviews_from_jax_file(file_path: str, debug: bool = True):
+    # Try AJAX parsing first
+    reviews_ajax, token, has_next, reftag, product = parse_reviews_ajax(content, debug=debug)
+    if debug:
+        print(f"AJAX parsing found {len(reviews_ajax)} reviews")
+    
+    # Fallback to HTML parsing
+    if not reviews_ajax:
+        reviews_html, token, has_next, reftag, product = parse_reviews(content, debug=debug)
+        if debug:
+            print(f"HTML parsing found {len(reviews_html)} reviews")
+```
+
+### 3. HTTP Request Failures
+**Symptoms**: 
+- 403 Forbidden errors
+- Empty responses
+- CAPTCHA challenges
+
+**Solutions**:
+- Verify `COOKIES` are up-to-date
+- Check `User-Agent` strings in headers
+- Implement request delays
+- Handle session expiration
+
+**Error Handling Pattern**:
+```python
+def perform_request(url, method='GET', **kwargs):
+    try:
+        response = requests.request(method, url, **kwargs)
+        response.raise_for_status()
+        return response
+    except requests.RequestException as e:
+        logging.error(f"Request failed: {e}")
+        return None
+```
+
+### 4. Pagination Issues
+**Symptoms**:
+- Stuck on first page
+- Missing subsequent pages
+- Token extraction failures
+
+**Debug Checklist**:
+- Verify `has_next` detection logic
+- Check `reftag` parameter extraction
+- Validate CSRF token parsing
+- Test with known multi-page products
+
+## Debugging Workflow
+
+### 1. Enable Comprehensive Logging
+```python
+# Set up logging before debugging
+import logging
+logging.basicConfig(level=logging.INFO)
+
+# Set per-run log file
+set_run_log_file("debug_session.log")
+
+# Enable debug mode in all functions
+results = amzn_review_main("search term", debug=True)
+```
+
+### 2. Step-by-Step Verification
+```python
+# Test individual components
+search_results = search_prod("bed sheets", 3, debug=True)
+print(f"Found ASINs: {search_results}")
+
+# Test specific ASIN
+html_content = fetch_product_reviews("B08XYZ123", debug=True)
+reviews, token, has_next, reftag, product = parse_reviews(html_content, debug=True)
+```
+
+### 3. File-Based Testing
+```python
+# Test with known files
+test_reviews = extract_reviews_from_jax_file("week2/test.jax")
+assert len(test_reviews) == 10, f"Expected 10 reviews, got {len(test_reviews)}"
+
+# Validate review structure
+for review in test_reviews[:3]:
+    print(f"Review: {review['content'][:100]}...")
+    print(f"Stars: {review['star']}, Reviewer: {review['reviewer']}")
+```
+
+## Error Prevention Best Practices
+
+### 1. Input Validation
+```python
+def validate_inputs(search_term, num_result, star_filter, total_pages):
+    assert search_term and search_term.strip(), "Search term cannot be empty"
+    assert 1 <= num_result <= 20, "num_result must be between 1 and 20"
+    assert star_filter is None or 1 <= star_filter <= 5, "star_filter must be 1-5 or None"
+    assert 1 <= total_pages <= 10, "total_pages must be between 1 and 10"
+```
+
+### 2. Robust Data Extraction
+```python
+def safe_extract_text(element, selector, default=""):
+    try:
+        found = element.select_one(selector)
+        return found.get_text(strip=True) if found else default
+    except Exception:
+        return default
+```
+
+### 3. Graceful Degradation
+- Always provide fallback mechanisms
+- Return consistent data structures even on failures
+- Log errors without crashing the application
+- Maintain session state across partial failures
+```
+
+```markdown:.cursor/rules/amzn-crawler-format-consistency.mdc
+---
+globs: week2/amzn_craw/**
+---
+
+# Format Consistency and Code Standards
+
+## Code Formatting Standards
+
+### Import Organization
+```python
+# Standard library imports first
+from __future__ import annotations
+import json
+import re
+import sys
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Any
+
+# Third-party imports
+from bs4 import BeautifulSoup
+import requests
+from flask import Flask, render_template, request
+```
+
+### Function Signature Consistency
+**All parsing functions must follow this pattern**:
+```python
+def parse_function_name(content: str, debug: bool = False) -> tuple[List[Dict[str, Any]], str | None, bool, str | None, Dict[str, str] | None]:
+    """
+    Parse reviews from content.
+    
+    Args:
+        content: HTML or AJAX response text
+        debug: Enable verbose logging
+        
+    Returns:
+        Tuple of (reviews, token, has_next, reftag, product_info)
+    """
+```
+
+### Review Data Structure Standard
+**Every review dictionary must contain exactly these fields**:
+```python
+review = {
+    "content": str,           # Review text with <br/> tags preserved
+    "star": int,             # Integer 1-5 (NOT float)
+    "reviewer": str,         # Reviewer name
+    "review_date": str,      # Date string as displayed on Amazon
+    "verified_purchase": str # Verification status string
+}
+```
+
+### Logging Format Standards
+```python
+# Use consistent logging throughout
+import logging
+
+# Standard log messages
+logging.info(f"Searching for products with term: {search_term}")
+logging.info(f"Found {len(reviews)} reviews for ASIN {asin}")
+logging.error(f"Failed to parse reviews: {error}")
+
+# Debug messages with detailed context
+if debug:
+    print(f"Processing ASIN: {asin}")
+    print(f"HTML content length: {len(html)}")
+    print(f"Extracted {len(reviews)} reviews")
+```
+
+## File Organization Standards
+
+### Output File Naming Convention
+**All output files must follow timestamp format**:
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+html_file = f"output/results_{timestamp}.html"
+log_file = f"output/results_{timestamp}.log"
+```
+
+### Directory Structure Consistency
+```python
+# Always use Path objects for file operations
+output_dir = Path(__file__).parent / "output"
+output_dir.mkdir(parents=True, exist_ok=True)
+
+template_dir = Path(__file__).parent / "templates"
+```
+
+## Configuration Standards
+
+### HTTP Headers Format
+```python
+# Use consistent header dictionaries
+HEADERS_STATIC = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate',
+}
+
+HEADERS_DYNAMIC = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'text/html, */*; q=0.01',
+    'X-Requested-With': 'XMLHttpRequest',
+}
+```
+
+### Cookie Format Standards
+```python
+# Use dictionary format for cookies
+COOKIES = {
+    'session-id': 'value',
+    'ubid-main': 'value', 
+    'at-main': 'value',
+    'x-main': 'value',
+}
+```
+
+## Web Interface Standards
+
+### Flask Route Patterns
+```python
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        # Extract and validate form data
+        keyword = request.form.get("keyword", "").strip()
+        
+        # Convert and validate numeric inputs
+        try:
+            num_products = int(request.form.get("num_products", "3"))
+        except (ValueError, TypeError):
+            num_products = 3
+            
+        # Call backend with consistent parameters
+        results = amzn_review_main(keyword, num_products, star_filter, total_pages, debug)
+```
+
+### Template Variable Naming
+**Consistent naming in [templates/](mdc:week2/amzn_craw/templates/)**:
+```html
+<!-- Use descriptive, consistent variable names -->
+{{ product_info.title }}
+{{ review.content }}
+{{ review.star }}
+{{ review.reviewer }}
+{{ review.review_date }}
+{{ review.verified_purchase }}
+```
+
+## Error Handling Format
+
+### Exception Handling Pattern
+```python
+def standard_function():
+    try:
+        # Main logic here
+        result = perform_operation()
+        return result
+    except SpecificException as e:
+        logging.error(f"Specific error in {function_name}: {e}")
+        return default_value
+    except Exception as e:
+        logging.error(f"Unexpected error in {function_name}: {e}")
+        return default_value
+```
+
+### Return Value Consistency
+**All functions must return consistent data types**:
+```python
+# Good: Always return same tuple structure
+def parse_reviews(html: str, debug: bool = False) -> tuple[List[Dict], str|None, bool, str|None, Dict|None]:
+    try:
+        # parsing logic
+        return reviews, token, has_next, reftag, product_info
+    except Exception:
+        # Return empty but consistent structure
+        return [], None, False, None, None
+```
+
+## Testing Format Standards
+
+### Test Function Naming
+```python
+def test_ajax_parsing_with_test_jax():
+    """Test AJAX parsing with the standard test.jax file."""
+    reviews = extract_reviews_from_jax_file("week2/test.jax")
+    assert len(reviews) == 10
+    assert all(isinstance(r['star'], int) for r in reviews)
+
+def test_main_function_with_debug():
+    """Test main function with debug enabled."""
+    results = amzn_review_main("test", num_result=1, debug=True)
+    assert isinstance(results, dict)
+```
+
+### Assertion Patterns
+```python
+# Use descriptive assertion messages
+assert len(reviews) == expected_count, f"Expected {expected_count} reviews, got {len(reviews)}"
+assert isinstance(review['star'], int), f"Star rating must be integer, got {type(review['star'])}"
+assert 1 <= review['star'] <= 5, f"Star rating must be 1-5, got {review['star']}"
+```
+```
+
+These comprehensive Cursor rules cover the entire Amazon crawler project structure, backend interactions, bug handling procedures, and formatting consistency standards. They provide specific guidance for working with the core `amzn_crawl_backend.py` module and maintain consistency across all project files.
+```
+
+description:
+globs:
+alwaysApply: true
+---

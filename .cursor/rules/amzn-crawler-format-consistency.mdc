@@ -1,0 +1,211 @@
+---
+globs: week2/amzn_craw/**
+---
+
+# Format Consistency and Code Standards
+
+## Code Formatting Standards
+
+### Import Organization
+```python
+# Standard library imports first
+from __future__ import annotations
+import json
+import re
+import sys
+import logging
+import os
+from datetime import datetime
+from pathlib import Path
+from typing import List, Dict, Any
+
+# Third-party imports
+from bs4 import BeautifulSoup
+import requests
+from flask import Flask, render_template, request
+```
+
+### Function Signature Consistency
+**All parsing functions must follow this pattern**:
+```python
+def parse_function_name(content: str, debug: bool = False) -> tuple[List[Dict[str, Any]], str | None, bool, str | None, Dict[str, str] | None]:
+    """
+    Parse reviews from content.
+    
+    Args:
+        content: HTML or AJAX response text
+        debug: Enable verbose logging
+        
+    Returns:
+        Tuple of (reviews, token, has_next, reftag, product_info)
+    """
+```
+
+### Review Data Structure Standard
+**Every review dictionary must contain exactly these fields**:
+```python
+review = {
+    "content": str,           # Review text with <br/> tags preserved
+    "star": int,             # Integer 1-5 (NOT float)
+    "reviewer": str,         # Reviewer name
+    "review_date": str,      # Date string as displayed on Amazon
+    "verified_purchase": str # Verification status string
+}
+```
+
+### Logging Format Standards
+```python
+# Use consistent logging throughout
+import logging
+
+# Standard log messages
+logging.info(f"Searching for products with term: {search_term}")
+logging.info(f"Found {len(reviews)} reviews for ASIN {asin}")
+logging.error(f"Failed to parse reviews: {error}")
+
+# Debug messages with detailed context
+if debug:
+    print(f"Processing ASIN: {asin}")
+    print(f"HTML content length: {len(html)}")
+    print(f"Extracted {len(reviews)} reviews")
+```
+
+## File Organization Standards
+
+### Output File Naming Convention
+**All output files must follow timestamp format**:
+```python
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+html_file = f"output/results_{timestamp}.html"
+log_file = f"output/results_{timestamp}.log"
+```
+
+### Directory Structure Consistency
+```python
+# Always use Path objects for file operations
+output_dir = Path(__file__).parent / "output"
+output_dir.mkdir(parents=True, exist_ok=True)
+
+template_dir = Path(__file__).parent / "templates"
+```
+
+## Configuration Standards
+
+### HTTP Headers Format
+```python
+# Use consistent header dictionaries
+HEADERS_STATIC = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate',
+}
+
+HEADERS_DYNAMIC = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    'Accept': 'text/html, */*; q=0.01',
+    'X-Requested-With': 'XMLHttpRequest',
+}
+```
+
+### Cookie Format Standards
+```python
+# Use dictionary format for cookies
+COOKIES = {
+    'session-id': 'value',
+    'ubid-main': 'value', 
+    'at-main': 'value',
+    'x-main': 'value',
+}
+```
+
+## Web Interface Standards
+
+### Flask Route Patterns
+```python
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if request.method == "POST":
+        # Extract and validate form data
+        keyword = request.form.get("keyword", "").strip()
+        
+        # Convert and validate numeric inputs
+        try:
+            num_products = int(request.form.get("num_products", "3"))
+        except (ValueError, TypeError):
+            num_products = 3
+            
+        # Call backend with consistent parameters
+        results = amzn_review_main(keyword, num_products, star_filter, total_pages, debug)
+```
+
+### Template Variable Naming
+**Consistent naming in [templates/](mdc:week2/amzn_craw/templates/)**:
+```html
+<!-- Use descriptive, consistent variable names -->
+{{ product_info.title }}
+{{ review.content }}
+{{ review.star }}
+{{ review.reviewer }}
+{{ review.review_date }}
+{{ review.verified_purchase }}
+```
+
+## Error Handling Format
+
+### Exception Handling Pattern
+```python
+def standard_function():
+    try:
+        # Main logic here
+        result = perform_operation()
+        return result
+    except SpecificException as e:
+        logging.error(f"Specific error in {function_name}: {e}")
+        return default_value
+    except Exception as e:
+        logging.error(f"Unexpected error in {function_name}: {e}")
+        return default_value
+```
+
+### Return Value Consistency
+**All functions must return consistent data types**:
+```python
+# Good: Always return same tuple structure
+def parse_reviews(html: str, debug: bool = False) -> tuple[List[Dict], str|None, bool, str|None, Dict|None]:
+    try:
+        # parsing logic
+        return reviews, token, has_next, reftag, product_info
+    except Exception:
+        # Return empty but consistent structure
+        return [], None, False, None, None
+```
+
+## Testing Format Standards
+
+### Test Function Naming
+```python
+def test_ajax_parsing_with_test_jax():
+    """Test AJAX parsing with the standard test.jax file."""
+    reviews = extract_reviews_from_jax_file("week2/test.jax")
+    assert len(reviews) == 10
+    assert all(isinstance(r['star'], int) for r in reviews)
+
+def test_main_function_with_debug():
+    """Test main function with debug enabled."""
+    results = amzn_review_main("test", num_result=1, debug=True)
+    assert isinstance(results, dict)
+```
+
+### Assertion Patterns
+```python
+# Use descriptive assertion messages
+assert len(reviews) == expected_count, f"Expected {expected_count} reviews, got {len(reviews)}"
+assert isinstance(review['star'], int), f"Star rating must be integer, got {type(review['star'])}"
+assert 1 <= review['star'] <= 5, f"Star rating must be 1-5, got {review['star']}"
+```
+
+description:
+globs:
+alwaysApply: true
+---
