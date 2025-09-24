@@ -1,0 +1,6 @@
+openai
+elasticsearch
+requests
+pymupdf
+jieba
+python-dotenv
