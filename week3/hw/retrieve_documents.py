@@ -1,6 +1,6 @@
 import json
 from openai import OpenAI
-from config import get_es
+from config import get_es, OPENAI_API_KEY
 from embedding import local_embedding
 import jieba
 import re
@@ -141,7 +141,7 @@ def rag_fusion(query):
 '''
     # Call OpenAI ChatGPT 4o nano to generate query variations
     
-    client = OpenAI()
+    client = OpenAI(api_key=OPENAI_API_KEY)
     
     try:
         response = client.chat.completions.create(
@@ -203,7 +203,7 @@ def coreference_resolution(query,chat_history):
 输出JSON：
 ''' 
     # Call OpenAI ChatGPT 4o nano to generate query variations
-    client = OpenAI()
+    client = OpenAI(api_key=OPENAI_API_KEY)
     response = client.chat.completions.create(
         model="gpt-5",
         messages=[
@@ -291,7 +291,7 @@ def query_decompositon(query):
 用户问题:
 "{query}"
 '''
-    client = OpenAI()
+    client = OpenAI(api_key=OPENAI_API_KEY)
     response = client.chat.completions.create(
         model="gpt-5",
         messages=[

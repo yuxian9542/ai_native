@@ -7,7 +7,8 @@ import mimetypes
 import os
 import fitz
 import json
-from config import IMAGE_MODEL_URL
+from config import IMAGE_MODEL_URL, OPENAI_API_KEY
+
 
 
 def _truncate(text: str, max_len: int = 1500) -> str:
@@ -49,7 +50,7 @@ def context_augmentation(page_context,image_description):
 {page_context}
 ```
 '''
-    client = OpenAI()
+    client = OpenAI(api_key=OPENAI_API_KEY)
     response = client.chat.completions.create(
         model="gpt-5",
         messages=[
@@ -70,7 +71,7 @@ def summarize_image(image_path, base_url = IMAGE_MODEL_URL):
             # print("prompt:\n",flush=True)
             # print(text+'\n',flush=True)
             # print(image_link)
-            client = OpenAI(api_key='YOUR_API_KEY', base_url=base_url)
+            client = OpenAI(api_key=OPENAI_API_KEY or 'YOUR_API_KEY', base_url=base_url)
 
             # Read local image and convert to Base64 data URL
             with open(image_path, 'rb') as f:
@@ -102,7 +103,7 @@ def summarize_image(image_path, base_url = IMAGE_MODEL_URL):
 
 def table_context_augmentation(page_context: str, table_md: str):
     """Augment the table description using page context to clarify meaning and usage."""
-    client = OpenAI()
+    client = OpenAI(api_key=OPENAI_API_KEY)
     prompt = f"""
 目标：请根据输入的表格和上下文信息以及来源文件信息，生成针对于该表格的一段简短的语言描述
 

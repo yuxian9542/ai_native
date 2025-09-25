@@ -12,26 +12,26 @@ def create_elastic_index(index_name):
                         "dims": 1024,
                         "index": True,
                         "similarity": "cosine"
-                        }
-                    #metadata filtering
-                    # "file_name": {
-                    #     "type": "text"
-                    # },
-                    # "page": {
-                    #     "type": "integer"
-                    # },
-                    # "chapter": {
-                    #     "type": "text"
-                    # },
-                    # "doc_type": {
-                    #     "type": "text"
-                    # },
-                    # "language": {
-                    #     "type": "text"
-                    # },
-                    # "file_id": {
-                    #      "type": "long"
-                    # },  
+                        },
+                    # metadata filtering
+                    "file_name": {
+                        "type": "text"
+                    },
+                    "page": {
+                        "type": "integer"
+                    },
+                    "chapter": {
+                        "type": "text"
+                    },
+                    "doc_type": {
+                        "type": "text"
+                    },
+                    "language": {
+                        "type": "text"
+                    },
+                    "file_id": {
+                         "type": "long"
+                    },  
 
                     }
                 }
@@ -48,5 +48,5 @@ def delete_elastic_index(index_name):
     print('[Delete Vector DB]' + index_name + ' deleted')
 
 if __name__ == '__main__':
-    create_elastic_index('test_index2')
-    # delete_elastic_index('test')
+    create_elastic_index('test_index')
+    delete_elastic_index('test')

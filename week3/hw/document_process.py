@@ -24,8 +24,8 @@ def process_pdf(es_index, file_path):
     batch = []
     for i, chunk in enumerate(chunks): #收集25个chunks为一批送到嵌入模型，增加速度
         batch.append(chunk)
+
         if len(batch) == 25 or i == len(chunks) - 1: 
-            print(chunk.page_content)
             embeddings = local_embedding([b.page_content for b in batch])
             for j, pc in enumerate(batch):
                 body = {
@@ -53,6 +53,4 @@ def num_tokens_from_string(string):
 
 
 if __name__ == '__main__':
-    import os
-    os.chdir('F:/Study/Class/Qishi/AI_Native/week3/RAG Demo')
-    process_pdf('test_index2', 'test_pdf/刑事诉讼法.pdf')
+    process_pdf('test_index', '刑事诉讼法.pdf')
