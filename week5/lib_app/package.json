@@ -1,0 +1,44 @@
+{
+  "name": "library-management-system",
+  "version": "1.0.0",
+  "description": "基于 Firebase 的图书管理系统",
+  "main": "index.html",
+  "scripts": {
+    "start": "serve -s . -l 3000",
+    "dev": "live-server --port=3000 --host=localhost --open=/index.html --watch=.",
+    "demo": "live-server --port=3000 --host=localhost --open=/demo.html --watch=.",
+    "test": "live-server --port=3000 --host=localhost --open=/test-app.html --watch=.",
+    "build": "echo '纯静态项目，无需构建步骤'",
+    "preview": "serve -s . -l 4173",
+    "install-tools": "npm install",
+    "help": "echo '使用 npm run dev 启动开发服务器'"
+  },
+  "keywords": [
+    "firebase",
+    "library",
+    "management",
+    "javascript",
+    "bootstrap",
+    "firestore",
+    "authentication"
+  ],
+  "author": "Library Management Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2",
+    "serve": "^14.2.1"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
+}
