@@ -27,7 +27,7 @@ jobs:
 
     # 打包正式环境
     - name: Build
-      working-directory: /week5/lib_app
+      working-directory: ./week5/lib_app
       run: npm run build
 
     - name: Deploy to Server
