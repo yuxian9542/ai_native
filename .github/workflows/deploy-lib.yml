@@ -10,7 +10,7 @@ on:
     branches:
       - main  # main分支push时自动执行工作流
     paths:
-      - '/week5/lib_app/**'
+      - './week5/lib_app/**'
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -22,7 +22,7 @@ jobs:
       
     # 安装依赖
     - name: Install Dependencies
-      working-directory: /week5/lib_app
+      working-directory: ./week5/lib_app
       run: npm install
 
     # 打包正式环境
