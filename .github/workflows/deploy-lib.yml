@@ -36,6 +36,7 @@ jobs:
         SSH_PRIVATE_KEY: ${{ secrets.TEST1_KEY }}
         REMOTE_HOST: ${{ secrets.TEST1_HOST }}
         REMOTE_USER: ${{ secrets.TEST1_USER }}
+        REMOTE_PORT: ${{ secrets.TEST1_PORT }}
         ARGS: "-avzL"
         SOURCE: "dist/"
         TARGET: "/server/www/yuxian-lib"
