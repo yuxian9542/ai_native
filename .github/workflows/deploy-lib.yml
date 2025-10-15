@@ -30,6 +30,12 @@ jobs:
       working-directory: ./week5/lib_app
       run: npm run build
 
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: lib_app
+        path: ./week5/lib_app/dist
+
     - name: Deploy to Server
       uses: easingthemes/ssh-deploy@v5.0.3
       env:
