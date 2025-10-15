@@ -10,7 +10,7 @@ on:
     branches:
       - main  # main分支push时自动执行工作流
     paths:
-      - 'week5/lib_app/**'
+      - './week5/lib_app/**'
 jobs:
   build-anddeploy:
     runs-on: ubuntu-latest
@@ -30,11 +30,24 @@ jobs:
       working-directory: ./week5/lib_app
       run: npm run build
 
-    - name: Upload Artifacts
-      uses: actions/upload-artifact@v4
+    # - name: Upload Artifacts
+    #   uses: actions/upload-artifact@v4
+    #   with:
+    #     name: lib_app
+    #     path: ./week5/lib_app/dist
+
+    - name: Create target directory
+      uses: appleboy/ssh-action@v1.0.3
       with:
-        name: lib_app
-        path: ./week5/lib_app/dist
+        host: ${{ secrets.TEST1_HOST }}
+        username: ${{ secrets.TEST1_USER }}
+        key: ${{ secrets.TEST1_KEY }}
+        port: ${{ secrets.TEST1_PORT }}
+        script: |
+          if [ ! -d /server/www/yuxian-lib ]; then
+            sudo mkdir -p /server/www/yuxian-lib
+            sudo chown -R ${{ secrets.TEST1_USER }}:${{ secrets.TEST1_USER }} /server/www/yuxian-lib
+          fi
 
     - name: Deploy to Server
       uses: easingthemes/ssh-deploy@v5.0.3
