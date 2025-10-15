@@ -1,0 +1,68 @@
+mutation CreateDemoData @transaction @auth(level: PUBLIC, insecureReason: "This mutation is used to populate the database with seed data, and is not intended for general use.") {
+  user_insertMany(data: [
+    {
+      id: "550e8400-e29b-41d4-a716-446655440000",
+      displayName: "demouser1",
+      createdAt: "2024-04-24T00:00:00Z"
+    },
+    {
+      id: "550e8400-e29b-41d4-a716-446655440001",
+      displayName: "demouser2",
+      createdAt: "2024-04-24T00:00:00Z"
+    }
+  ])
+  book_insertMany(data: [
+    {
+      id: "650e8400-e29b-41d4-a716-446655440000",
+      title: "Example Book 1",
+      author: "demoauthor1",
+      createdAt: "2024-04-24T00:00:00Z"
+    },
+    {
+      id: "650e8400-e29b-41d4-a716-446655440001",
+      title: "Example Book 2",
+      author: "demoauthor2",
+      createdAt: "2024-04-24T00:00:00Z"
+    }
+  ])
+  readingList_insertMany(data: [
+    {
+      id: "750e8400-e29b-41d4-a716-446655440000",
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      name: "Demo Reading List 1",
+      createdAt: "2024-04-24T00:00:00Z"
+    },
+    {
+      id: "750e8400-e29b-41d4-a716-446655440001",
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      name: "Demo Reading List 2",
+      createdAt: "2024-04-24T00:00:00Z"
+    }
+  ])
+  readingListItem_insertMany(data: [
+    {
+      readingListId: "750e8400-e29b-41d4-a716-446655440000",
+      bookId: "650e8400-e29b-41d4-a716-446655440000",
+      position: 1
+    },
+    {
+      readingListId: "750e8400-e29b-41d4-a716-446655440001",
+      bookId: "650e8400-e29b-41d4-a716-446655440001",
+      position: 1
+    }
+  ])
+    readingEntry_insertMany(data: [
+    {
+      userId: "550e8400-e29b-41d4-a716-446655440000",
+      bookId: "650e8400-e29b-41d4-a716-446655440000",
+      status: "Completed",
+      createdAt: "2024-04-24T00:00:00Z"
+    },
+        {
+      userId: "550e8400-e29b-41d4-a716-446655440001",
+      bookId: "650e8400-e29b-41d4-a716-446655440001",
+      status: "InProgress",
+      createdAt: "2024-04-24T00:00:00Z"
+    }
+  ])
+}

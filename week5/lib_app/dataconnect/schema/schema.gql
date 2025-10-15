@@ -1,0 +1,43 @@
+type User @table {
+  displayName: String!
+  email: String
+  photoUrl: String
+  createdAt: Timestamp!
+}
+
+type Book @table {
+  title: String!
+  author: String!
+  isbn: String
+  publicationYear: Int
+  pageCount: Int
+  description: String
+  coverImageUrl: String
+  createdAt: Timestamp!
+}
+
+type ReadingEntry @table {
+  user: User!
+  book: Book!
+  status: String!
+  startDate: Date
+  endDate: Date
+  notes: String
+  rating: Int
+  createdAt: Timestamp!
+}
+
+type ReadingList @table {
+  user: User!
+  name: String!
+  description: String
+  createdAt: Timestamp!
+}
+
+type ReadingListItem @table(key: ["readingList", "book"]) {
+  readingList: ReadingList!
+  book: Book!
+  position: Int!
+  addedAt: Timestamp
+  notesOnList: String
+}

@@ -1,14 +1,10 @@
 import { useState } from 'react';
-import { useAuth } from '../contexts/AuthContext';
 import { useBooks } from '../hooks/useBooks';
 import { BookCard } from '../components/BookCard';
-import { BookForm } from '../components/BookForm';
-import { BookOpen, Search } from 'lucide-react';
+import { BookOpen, Search, LogIn } from 'lucide-react';
 
-export function HomePage() {
-  const { currentUser } = useAuth();
-  const { loading, addBook, getPublicBooks } = useBooks();
-  const [showAddForm, setShowAddForm] = useState(false);
+export function PublicHomePage() {
+  const { loading, getPublicBooks } = useBooks();
   const [searchTerm, setSearchTerm] = useState('');
 
   const publicBooks = getPublicBooks();
@@ -16,11 +12,6 @@ export function HomePage() {
     book.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     book.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
-
-  const handleAddBook = async (bookData: any) => {
-    await addBook(bookData);
-    setShowAddForm(false);
-  };
 
   if (loading) {
     return (
@@ -39,11 +30,19 @@ export function HomePage() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
-            欢迎来到图书管理系统
+            图书管理系统
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            管理您的图书收藏，与大家分享您喜爱的图书
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+            浏览大家分享的图书收藏，发现更多精彩内容
           </p>
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
+            <div className="flex items-center justify-center text-blue-800">
+              <LogIn className="h-5 w-5 mr-2" />
+              <span className="text-sm font-medium">
+                登录后可以添加和管理您自己的图书
+              </span>
+            </div>
+          </div>
         </div>
 
         {/* Search Bar */}
@@ -60,30 +59,12 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Add Book Form */}
-        {currentUser && showAddForm && (
-          <div className="mb-8">
-            <BookForm
-              onSubmit={handleAddBook}
-              onCancel={() => setShowAddForm(false)}
-            />
-          </div>
-        )}
-
         {/* Books Grid */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-bold text-gray-900">
               所有图书 ({filteredBooks.length})
             </h2>
-            {!showAddForm && (
-              <button
-                onClick={() => setShowAddForm(true)}
-                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                添加新图书
-              </button>
-            )}
           </div>
 
           {filteredBooks.length === 0 ? (
@@ -95,7 +76,7 @@ export function HomePage() {
               <p className="text-gray-500">
                 {searchTerm 
                   ? '尝试使用不同的搜索词'
-                  : '点击上方按钮添加您的第一本图书'
+                  : '登录后可以添加第一本图书'
                 }
               </p>
             </div>

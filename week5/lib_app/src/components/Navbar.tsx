@@ -64,7 +64,7 @@ export function Navbar({ onAddBook }: NavbarProps) {
               </div>
             ) : (
               <div className="text-sm text-gray-500">
-                未登录用户只能查看图书
+                浏览模式 - 登录后可添加图书
               </div>
             )}
           </div>

@@ -3,15 +3,15 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
-// For Firebase projects that support multiple apps, you can use the Firebase config object
-// directly or use environment variables
+// This configuration is obtained from Firebase CLI: firebase apps:sdkconfig web --project lib-mgmt-dynm
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "your-api-key",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "your-project.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "your-project-id",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "your-project.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "your-app-id"
+  apiKey: "AIzaSyBu3Xtvbt7GOwIrvgUc2u4X99TBqqANWZs",
+  authDomain: "lib-mgmt-dynm.firebaseapp.com",
+  projectId: "lib-mgmt-dynm",
+  storageBucket: "lib-mgmt-dynm.firebasestorage.app",
+  messagingSenderId: "250620246471",
+  appId: "1:250620246471:web:4f2a98a2bea03bdf2001e2",
+  measurementId: "G-FPYCBSVPSF"
 };
 
 // Initialize Firebase

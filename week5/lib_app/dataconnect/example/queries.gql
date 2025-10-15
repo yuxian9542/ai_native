@@ -1,0 +1,25 @@
+mutation AddBookToReadingList($bookId: UUID!, $readingListId: UUID!) @auth(level: USER) {
+  readingListItem_insert(data: {bookId: $bookId, readingListId: $readingListId, position: 1})
+}
+
+query GetBooksOnReadingList($readingListId: UUID!) @auth(level: USER) {
+  readingList(id: $readingListId) {
+    books_via_ReadingListItem {
+      id
+      title
+      author
+    }
+  }
+}
+
+mutation CreateReadingList($name: String!, $description: String!) @auth(level: USER) {
+  readingList_insert(data: {name: $name, description: $description, userId_expr: "auth.uid"})
+}
+
+query GetReadingListsForUser @auth(level: USER) {
+  readingLists(where: {userId_expr: "auth.uid"}) {
+    id
+    name
+    description
+  }
+}
