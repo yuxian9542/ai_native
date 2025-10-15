@@ -51,8 +51,8 @@ jobs:
           # Create nginx configuration for the app
           sudo tee /etc/nginx/conf.d/yuxian-social-media.conf > /dev/null <<EOF
           server {
-              listen 80;
-              server_name _;
+              listen 80 default_server;
+              server_name default_server;
               root /home/${{ secrets.SOCIAL_MEDIA_USER }}/yuxian-social-media;
               index index.html;
               
