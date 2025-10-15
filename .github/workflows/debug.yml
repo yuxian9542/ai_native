@@ -1,0 +1,55 @@
+name: Debug - Show directory structure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Show directories and paths
+        run: |
+          echo "=== Runner PWD ==="
+          pwd
+          echo "=== GITHUB_WORKSPACE ==="
+          echo "$GITHUB_WORKSPACE"
+
+          echo "\n=== Root directory ==="
+          ls -la
+
+          echo "\n=== Week5 directory ==="
+          ls -la week5 || true
+
+          echo "\n=== lib_app directory ==="
+          ls -la week5/lib_app || true
+
+          echo "\n=== Check index.html ==="
+          if [ -f "week5/lib_app/index.html" ]; then
+            echo "✅ index.html found at week5/lib_app/index.html"
+          else
+            echo "❌ index.html not found at week5/lib_app/index.html"
+            echo "Searching for index.html (max depth 4)..."
+            find . -maxdepth 4 -name "index.html" || true
+          fi
+
+      - name: Print vite config (if present)
+        run: |
+          echo "\n=== vite.config.ts ==="
+          sed -n '1,200p' week5/lib_app/vite.config.ts || true
+
+      - name: Node version
+        run: node -v
+
+      - name: Install dependencies
+        working-directory: ./week5/lib_app
+        run: npm ci
+
+      - name: Build
+        working-directory: ./week5/lib_app
+        run: npm run build
