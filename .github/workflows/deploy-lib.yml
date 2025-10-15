@@ -46,7 +46,7 @@ jobs:
         script: |
           if [ ! -d /server/www/yuxian-lib ]; then
             sudo mkdir -p /server/www/yuxian-lib
-            sudo chown -R ${{ secrets.TEST1_USER }}:${{ secrets.TEST1_USER }} /server/www/yuxian-lib
+            sudo chown -R ${{ secrets.TEST1_USER }}:${{ secrets.TEST1_USER }} ./server/www/yuxian-lib
           fi
 
     - name: Deploy to Server
@@ -58,5 +58,5 @@ jobs:
         REMOTE_PORT: ${{ secrets.TEST1_PORT }}
         ARGS: "-avzL"
         SOURCE: "week5/lib_app/dist/"
-        TARGET: "/server/www/yuxian-lib"
+        TARGET: "./server/www/yuxian-lib"
 #        SCRIPT_AFTER: |
