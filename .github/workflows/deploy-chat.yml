@@ -30,7 +30,7 @@ jobs:
       working-directory: ./week5/social_media
       run: npm run build
 
-    - name: Create target directory
+    - name: Create target directory and setup web server
       uses: appleboy/ssh-action@v1.0.3
       with:
         host: ${{ secrets.SOCIAL_MEDIA_HOST }}
@@ -38,10 +38,33 @@ jobs:
         key: ${{ secrets.SOCIAL_MEDIA_KEY }}
         # port: ${{ secrets.TEST1_PORT }}
         script: |
-          if [ ! -d /server/www/yuxian-social-media ]; then
-            sudo mkdir -p /server/www/yuxian-social-media
-            sudo chown -R ${{ secrets.TEST1_USER }}:${{ secrets.TEST1_USER }} ./server/www/yuxian-social-media
+          # Create directory in user's home directory
+          mkdir -p ~/yuxian-social-media
+          chmod 755 ~/yuxian-social-media
+          
+          # Install nginx if not already installed
+          if ! command -v nginx &> /dev/null; then
+            sudo yum update -y
+            sudo yum install -y nginx
           fi
+          
+          # Create nginx configuration for the app
+          sudo tee /etc/nginx/conf.d/yuxian-social-media.conf > /dev/null <<EOF
+          server {
+              listen 80;
+              server_name _;
+              root /home/${{ secrets.SOCIAL_MEDIA_USER }}/yuxian-social-media;
+              index index.html;
+              
+              location / {
+                  try_files \$uri \$uri/ /index.html;
+              }
+          }
+          EOF
+          
+          # Start nginx
+          sudo systemctl start nginx
+          sudo systemctl enable nginx
 
     - name: Deploy to Server
       uses: easingthemes/ssh-deploy@v5.0.3
@@ -52,5 +75,8 @@ jobs:
         # REMOTE_PORT: ${{ secrets.SOCIAL_MEDIA_PORT }}
         ARGS: "-avzL"
         SOURCE: "week5/social_media/dist/"
-        TARGET: "./server/www/yuxian-social-media"
-#        SCRIPT_AFTER: |
+        TARGET: "~/yuxian-social-media"
+        SCRIPT_AFTER: |
+          # Reload nginx to serve the new files
+          sudo systemctl reload nginx
+          echo "Deployment completed successfully!"
