@@ -134,6 +134,9 @@ temp/
 
 # HTML files
 *.html
+# Ignore all HTML files except index.html
+!**/index.html
+
 
 # Exception: Allow HTML templates for web interfaces
 !week2/amzn_craw/templates/*.html
