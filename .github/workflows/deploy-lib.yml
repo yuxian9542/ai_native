@@ -10,9 +10,9 @@ on:
     branches:
       - main  # main分支push时自动执行工作流
     paths:
-      - './week5/lib_app/**'
+      - ./week5/lib_app
 jobs:
-  deploy:
+  build-anddeploy:
     runs-on: ubuntu-latest
 
     # 下载源码
