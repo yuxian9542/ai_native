@@ -12,7 +12,7 @@ on:
     paths:
       - './week5/lib_app/**'
 jobs:
-  build-anddeploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     # 下载源码
