@@ -1,0 +1,56 @@
+# This is a basic workflow that is dev triggered
+
+name: auto deploy to EC2
+
+# Controls when the action will run. Workflow runs when manually triggered using the UI
+# or API.
+on:
+  workflow_dispatch:  
+  push:
+    branches:
+      - main  # main分支push时自动执行工作流
+    paths:
+      - './week5/social_media/**'
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    # 下载源码
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    # 安装依赖
+    - name: Install Dependencies
+      working-directory: ./week5/social_media
+      run: npm install
+
+    # 打包正式环境
+    - name: Build
+      working-directory: ./week5/social_media
+      run: npm run build
+
+    - name: Create target directory
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.TEST1_HOST }}
+        username: ${{ secrets.TEST1_USER }}
+        key: ${{ secrets.TEST1_KEY }}
+        port: ${{ secrets.TEST1_PORT }}
+        script: |
+          if [ ! -d /server/www/yuxian-social-media ]; then
+            sudo mkdir -p /server/www/yuxian-social-media
+            sudo chown -R ${{ secrets.TEST1_USER }}:${{ secrets.TEST1_USER }} ./server/www/yuxian-social-media
+          fi
+
+    - name: Deploy to Server
+      uses: easingthemes/ssh-deploy@v5.0.3
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.TEST1_KEY }}
+        REMOTE_HOST: ${{ secrets.TEST1_HOST }}
+        REMOTE_USER: ${{ secrets.TEST1_USER }}
+        REMOTE_PORT: ${{ secrets.TEST1_PORT }}
+        ARGS: "-avzL"
+        SOURCE: "week5/social_media/dist/"
+        TARGET: "./server/www/yuxian-social-media"
+#        SCRIPT_AFTER: |
