@@ -1,15 +1,9 @@
 import React from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import FirebaseAuth from './components/FirebaseAuth';
+import { AuthProvider } from './contexts/AuthContext';
 import HomePage from './pages/HomePage';
 
 const AppContent: React.FC = () => {
-  const { user } = useAuth();
-
-  if (!user) {
-    return <FirebaseAuth onAuthSuccess={() => {}} />;
-  }
-
+  // Always show HomePage, whether user is logged in or not
   return <HomePage />;
 };
 

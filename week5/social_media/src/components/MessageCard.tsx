@@ -4,7 +4,7 @@ import { Comment } from '../types/Comment';
 import { useAuth } from '../contexts/AuthContext';
 import { Edit2, Trash2, Save, X, MessageCircle } from 'lucide-react';
 import { updateMessage, deleteMessage } from '../utils/messageService';
-import { subscribeToComments } from '../utils/commentService';
+import { subscribeToComments, debugGetComments } from '../utils/commentService';
 import CommentForm from './CommentForm';
 import CommentComponent from './Comment';
 import LikeButton from './LikeButton';
@@ -28,12 +28,25 @@ const MessageCard: React.FC<MessageCardProps> = ({ message, onUpdate }) => {
   useEffect(() => {
     if (!showComments) return;
 
+    console.log('Setting up comment subscription for message:', message.id);
     const unsubscribe = subscribeToComments(message.id, (newComments) => {
+      console.log('Received comments:', newComments);
       setComments(newComments);
     });
 
-    return () => unsubscribe();
+    return () => {
+      console.log('Unsubscribing from comments');
+      unsubscribe();
+    };
   }, [message.id, showComments]);
+
+  // Alternative: Force load comments when comments section is opened
+  useEffect(() => {
+    if (showComments && comments.length === 0) {
+      console.log('Force loading comments...');
+      debugGetComments(message.id);
+    }
+  }, [showComments, message.id, comments.length]);
 
   const handleUpdate = async () => {
     if (!editTitle.trim() || !editContent.trim()) return;
@@ -186,12 +199,24 @@ const MessageCard: React.FC<MessageCardProps> = ({ message, onUpdate }) => {
           <CommentForm 
             messageId={message.id} 
             onCommentCreated={() => {
+              console.log('Comment created, refreshing...');
               onUpdate();
+              // Force refresh comments by toggling the subscription
+              setShowComments(false);
+              setTimeout(() => setShowComments(true), 100);
             }} 
           />
           
-          <div className="text-sm text-gray-500">
-            {comments.length === 0 ? 'No comments yet' : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              {comments.length === 0 ? 'No comments yet' : `${comments.length} comment${comments.length === 1 ? '' : 's'}`}
+            </div>
+            <button
+              onClick={() => debugGetComments(message.id)}
+              className="text-xs text-blue-600 hover:text-blue-800 underline"
+            >
+              Debug Comments
+            </button>
           </div>
           
           {comments.length > 0 && (

@@ -37,7 +37,7 @@ const Comment: React.FC<CommentProps> = ({ comment, onUpdate }) => {
 
     setLoading(true);
     try {
-      await deleteComment(comment.id);
+      await deleteComment(comment.id, comment.messageId);
       onUpdate();
     } catch (error) {
       console.error('Failed to delete comment:', error);
