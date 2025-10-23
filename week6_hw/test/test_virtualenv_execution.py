@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Docker代码执行测试
-测试在Docker容器中执行Python代码的功能
+虚拟环境代码执行测试
+测试在虚拟环境中执行Python代码的功能
 """
 import sys
 import asyncio
@@ -12,18 +12,26 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from backend.services.docker_code_executor import docker_code_executor
+from backend.services.virtualenv_code_executor import virtualenv_code_executor
 from backend.models.schemas import FileSearchResult, ColumnInfo
 
 
-async def test_docker_execution():
-    """测试Docker代码执行"""
-    print("🐳 Docker代码执行测试")
+async def test_virtualenv_execution():
+    """测试虚拟环境代码执行"""
+    print("🐍 虚拟环境代码执行测试")
     print("=" * 50)
     
-    # 1. 创建测试数据
-    print("1. 创建测试数据...")
-    test_csv_path = PROJECT_ROOT / "data" / "processed" / "test_docker_execution.csv"
+    # 1. 测试环境
+    print("1. 测试执行环境...")
+    if virtualenv_code_executor.test_environment():
+        print("   ✅ 虚拟环境执行环境正常")
+    else:
+        print("   ❌ 虚拟环境执行环境异常")
+        return
+    
+    # 2. 创建测试数据
+    print("\n2. 创建测试数据...")
+    test_csv_path = PROJECT_ROOT / "data" / "processed" / "test_virtualenv_execution.csv"
     
     # 生成测试数据
     test_data = {
@@ -37,19 +45,19 @@ async def test_docker_execution():
     df.to_csv(test_csv_path, index=False, encoding='utf-8-sig')
     print(f"   ✅ 测试数据已创建: {len(df)} 行数据")
     
-    # 2. 测试简单代码执行
-    print("\n2. 测试简单代码执行...")
+    # 3. 测试简单代码执行
+    print("\n3. 测试简单代码执行...")
     simple_code = """
-# 读取数据
+# Read data
 df = pd.read_csv(CSV_FILE_PATH)
-print("数据形状:", df.shape)
-print("列名:", list(df.columns))
-print("前3行数据:")
+print("Data shape:", df.shape)
+print("Column names:", list(df.columns))
+print("First 3 rows:")
 print(df.head(3))
 """
     
     try:
-        result = await docker_code_executor.execute_code(simple_code, str(test_csv_path))
+        result = await virtualenv_code_executor.execute_code(simple_code, str(test_csv_path))
         
         if result.success:
             print("   ✅ 简单代码执行成功")
@@ -62,8 +70,8 @@ print(df.head(3))
     except Exception as e:
         print(f"   ❌ 简单代码执行异常: {e}")
     
-    # 3. 测试数据分析代码
-    print("\n3. 测试数据分析代码...")
+    # 4. 测试数据分析代码
+    print("\n4. 测试数据分析代码...")
     analysis_code = """
 # 读取数据
 df = pd.read_csv(CSV_FILE_PATH)
@@ -73,7 +81,7 @@ print("=== 基本统计信息 ===")
 print(df.describe())
 
 # 按产品分组统计
-print("\n=== 按产品分组统计 ===")
+print("\\n=== 按产品分组统计 ===")
 product_stats = df.groupby('产品名称').agg({
     '销售额': ['sum', 'mean', 'count'],
     '数量': ['sum', 'mean']
@@ -81,13 +89,13 @@ product_stats = df.groupby('产品名称').agg({
 print(product_stats)
 
 # 按月份统计
-print("\n=== 按月份统计 ===")
+print("\\n=== 按月份统计 ===")
 monthly_stats = df.groupby('月份')['销售额'].sum()
 print(monthly_stats)
 """
     
     try:
-        result = await docker_code_executor.execute_code(analysis_code, str(test_csv_path))
+        result = await virtualenv_code_executor.execute_code(analysis_code, str(test_csv_path))
         
         if result.success:
             print("   ✅ 数据分析代码执行成功")
@@ -98,8 +106,8 @@ print(monthly_stats)
     except Exception as e:
         print(f"   ❌ 数据分析代码执行异常: {e}")
     
-    # 4. 测试图表生成代码
-    print("\n4. 测试图表生成代码...")
+    # 5. 测试图表生成代码
+    print("\n5. 测试图表生成代码...")
     chart_code = """
 # 读取数据
 df = pd.read_csv(CSV_FILE_PATH)
@@ -132,7 +140,7 @@ print(f"数量统计: {quantity_by_month.to_dict()}")
 """
     
     try:
-        result = await docker_code_executor.execute_code(chart_code, str(test_csv_path))
+        result = await virtualenv_code_executor.execute_code(chart_code, str(test_csv_path))
         
         if result.success:
             print("   ✅ 图表生成代码执行成功")
@@ -146,7 +154,7 @@ print(f"数量统计: {quantity_by_month.to_dict()}")
                 
                 import base64
                 image_data = base64.b64decode(result.image)
-                image_path = output_dir / "test_docker_chart.png"
+                image_path = output_dir / "test_virtualenv_chart.png"
                 with open(image_path, 'wb') as f:
                     f.write(image_data)
                 print(f"   📊 图表已保存: {image_path}")
@@ -158,8 +166,8 @@ print(f"数量统计: {quantity_by_month.to_dict()}")
     except Exception as e:
         print(f"   ❌ 图表生成代码执行异常: {e}")
     
-    # 5. 测试复杂分析代码
-    print("\n5. 测试复杂分析代码...")
+    # 6. 测试复杂分析代码
+    print("\n6. 测试复杂分析代码...")
     complex_code = """
 # 读取数据
 df = pd.read_csv(CSV_FILE_PATH)
@@ -214,7 +222,7 @@ print(f"数据质量: {len(df)} 条有效记录")
 """
     
     try:
-        result = await docker_code_executor.execute_code(complex_code, str(test_csv_path))
+        result = await virtualenv_code_executor.execute_code(complex_code, str(test_csv_path))
         
         if result.success:
             print("   ✅ 复杂分析代码执行成功")
@@ -228,7 +236,7 @@ print(f"数据质量: {len(df)} 条有效记录")
                 
                 import base64
                 image_data = base64.b64decode(result.image)
-                image_path = output_dir / "test_docker_complex_analysis.png"
+                image_path = output_dir / "test_virtualenv_complex_analysis.png"
                 with open(image_path, 'wb') as f:
                     f.write(image_data)
                 print(f"   📊 复杂图表已保存: {image_path}")
@@ -240,17 +248,9 @@ print(f"数据质量: {len(df)} 条有效记录")
     except Exception as e:
         print(f"   ❌ 复杂分析代码执行异常: {e}")
     
-    # 6. 清理资源
-    print("\n6. 清理资源...")
-    try:
-        docker_code_executor.cleanup()
-        print("   ✅ 资源清理完成")
-    except Exception as e:
-        print(f"   ⚠️  资源清理异常: {e}")
-    
-    print("\n🎉 Docker代码执行测试完成！")
+    print("\n🎉 虚拟环境代码执行测试完成！")
     print("=" * 50)
 
 
 if __name__ == "__main__":
-    asyncio.run(test_docker_execution())
+    asyncio.run(test_virtualenv_execution())

@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     # 执行配置
     code_execution_timeout: int = 60
     max_file_size: int = 52428800  # 50MB
-    use_docker_execution: bool = True  # 是否使用Docker执行代码
+    use_docker_execution: bool = False  # 是否使用Docker执行代码（默认使用虚拟环境）
     
     class Config:
         env_file_encoding = "utf-8"

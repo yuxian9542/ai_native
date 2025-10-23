@@ -63,6 +63,25 @@ EXCEL_METADATA_MAPPING = {
             "tags": {
                 "type": "keyword"
             },
+            "headers": {
+                "type": "keyword"
+            },
+            "first_5_rows": {
+                "type": "object",
+                "enabled": False  # 存储但不索引
+            },
+            "last_5_rows": {
+                "type": "object",
+                "enabled": False  # 存储但不索引
+            },
+            "column_unique_values": {
+                "type": "object",
+                "properties": {
+                    "*": {
+                        "type": "keyword"
+                    }
+                }
+            },
             "created_at": {
                 "type": "date"
             },

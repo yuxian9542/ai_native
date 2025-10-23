@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Layout, Input, Button, Card, Typography, Tag, Spin, Badge, message, Upload, Progress } from 'antd';
+import { Layout, Input, Button, Card, Typography, Tag, Spin, Badge, message, Upload, Progress, List, Space, Tooltip, Divider } from 'antd';
 import {
   SendOutlined,
   AudioOutlined,
@@ -11,13 +11,16 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   UploadOutlined,
-  FileExcelOutlined
+  FileExcelOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  FileTextOutlined
 } from '@ant-design/icons';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import './App.css';
 
-const { Header, Content, Footer } = Layout;
+const { Header, Content, Footer, Sider } = Layout;
 const { TextArea } = Input;
 const { Title, Text, Paragraph } = Typography;
 
@@ -30,6 +33,8 @@ function App() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [deletingFiles, setDeletingFiles] = useState(new Set());
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const wsRef = useRef(null);
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -239,6 +244,42 @@ function App() {
     }
   };
 
+  // 删除文件
+  const deleteFile = async (fileId, fileName) => {
+    try {
+      // 设置删除状态
+      setDeletingFiles(prev => new Set(prev).add(fileId));
+      
+      const response = await fetch(`http://localhost:8000/api/files/${fileId}`, {
+        method: 'DELETE'
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        message.success(result.message || '文件删除成功');
+        // 从UI中移除文件
+        setUploadedFiles(prevFiles => prevFiles.filter(file => file.file_id !== fileId));
+      } else {
+        const error = await response.json();
+        message.error(error.detail || '删除失败');
+        // 如果删除失败，重新获取文件列表以恢复UI状态
+        fetchFileList();
+      }
+    } catch (error) {
+      console.error('删除文件失败:', error);
+      message.error('删除文件失败');
+      // 如果删除失败，重新获取文件列表以恢复UI状态
+      fetchFileList();
+    } finally {
+      // 清除删除状态
+      setDeletingFiles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(fileId);
+        return newSet;
+      });
+    }
+  };
+
   const renderMessage = (msg, index) => {
     switch (msg.type) {
       case 'user':
@@ -396,32 +437,16 @@ function App() {
     <Layout className="app-layout">
       <Header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Button
+            type="text"
+            icon={<FolderOutlined />}
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            style={{ color: 'white', fontSize: '16px' }}
+            title={sidebarCollapsed ? '展开文件管理' : '折叠文件管理'}
+          />
           <Title level={3} style={{ color: 'white', margin: 0 }}>
             📊 Excel智能分析系统
           </Title>
-          <Upload
-            accept=".xlsx,.xls"
-            beforeUpload={handleFileUpload}
-            showUploadList={false}
-            disabled={isUploading}
-          >
-            <Button 
-              type="primary" 
-              icon={<UploadOutlined />}
-              loading={isUploading}
-              style={{ background: '#52c41a', borderColor: '#52c41a' }}
-            >
-              {isUploading ? '上传中...' : '上传Excel'}
-            </Button>
-          </Upload>
-          {isUploading && (
-            <Progress 
-              percent={uploadProgress} 
-              size="small" 
-              style={{ width: 100 }}
-              status={uploadProgress === 100 ? 'success' : 'active'}
-            />
-          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Badge 
@@ -434,39 +459,149 @@ function App() {
         </div>
       </Header>
 
-      <Content className="app-content">
+      <Layout>
+        {/* 左侧文件管理面板 */}
+        <Sider 
+          width={300} 
+          collapsed={sidebarCollapsed}
+          collapsedWidth={60}
+          className="file-sidebar"
+          theme="light"
+        >
+          <div className="sidebar-header">
+            {!sidebarCollapsed && (
+              <div style={{ padding: '16px', borderBottom: '1px solid #f0f0f0' }}>
+                <Title level={5} style={{ margin: 0, display: 'flex', alignItems: 'center' }}>
+                  <FolderOutlined style={{ marginRight: 8 }} />
+                  文件管理
+                </Title>
+              </div>
+            )}
+            
+            <div style={{ padding: '16px' }}>
+              <Upload
+                accept=".xlsx,.xls"
+                beforeUpload={handleFileUpload}
+                showUploadList={false}
+                disabled={isUploading}
+              >
+                <Button 
+                  type="primary" 
+                  icon={<PlusOutlined />}
+                  loading={isUploading}
+                  block={!sidebarCollapsed}
+                  style={{ 
+                    background: '#52c41a', 
+                    borderColor: '#52c41a',
+                    height: sidebarCollapsed ? '40px' : 'auto'
+                  }}
+                >
+                  {sidebarCollapsed ? '' : (isUploading ? '上传中...' : '上传Excel')}
+                </Button>
+              </Upload>
+              
+              {isUploading && !sidebarCollapsed && (
+                <Progress 
+                  percent={uploadProgress} 
+                  size="small" 
+                  style={{ marginTop: 8 }}
+                  status={uploadProgress === 100 ? 'success' : 'active'}
+                />
+              )}
+            </div>
+          </div>
+
+          <div className="file-list-container">
+            {!sidebarCollapsed ? (
+              <List
+                dataSource={uploadedFiles}
+                locale={{ emptyText: '暂无文件' }}
+                renderItem={(file) => (
+                  <List.Item
+                    key={file.file_id}
+                    style={{
+                      padding: '8px 16px',
+                      opacity: deletingFiles.has(file.file_id) ? 0.5 : 1,
+                      transition: 'opacity 0.3s ease'
+                    }}
+                    actions={[
+                      <Tooltip title="删除文件">
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          loading={deletingFiles.has(file.file_id)}
+                          onClick={() => deleteFile(file.file_id)}
+                        />
+                      </Tooltip>
+                    ]}
+                  >
+                    <List.Item.Meta
+                      avatar={<FileExcelOutlined style={{ color: '#52c41a', fontSize: 16 }} />}
+                      title={
+                        <Text 
+                          ellipsis={{ tooltip: file.file_name }}
+                          style={{ fontSize: '12px' }}
+                        >
+                          {file.file_name}
+                        </Text>
+                      }
+                      description={
+                        <Space direction="vertical" size={2}>
+                          <Text type="secondary" style={{ fontSize: '10px' }}>
+                            {file.row_count} 行 × {file.column_count} 列
+                          </Text>
+                          <Text type="secondary" style={{ fontSize: '10px' }}>
+                            {new Date(file.created_at).toLocaleDateString()}
+                          </Text>
+                        </Space>
+                      }
+                    />
+                  </List.Item>
+                )}
+              />
+            ) : (
+              <div style={{ padding: '8px' }}>
+                {uploadedFiles.map((file) => (
+                  <Tooltip key={file.file_id} title={file.file_name}>
+                    <Button
+                      type="text"
+                      icon={<FileExcelOutlined />}
+                      style={{ 
+                        width: '100%', 
+                        height: '40px', 
+                        marginBottom: '4px',
+                        opacity: deletingFiles.has(file.file_id) ? 0.5 : 1
+                      }}
+                      onClick={() => deleteFile(file.file_id)}
+                    />
+                  </Tooltip>
+                ))}
+              </div>
+            )}
+          </div>
+        </Sider>
+
+        <Layout>
+          <Content className="app-content">
         <div className="messages-container">
           {messages.length === 0 && (
             <div className="welcome-message">
               <RobotOutlined style={{ fontSize: 48, color: '#1890ff' }} />
               <Title level={4}>欢迎使用Excel智能分析系统</Title>
               <Text type="secondary">
-                请先上传Excel文件，然后输入您的问题进行分析
+                请先在左侧上传Excel文件，然后输入您的问题进行分析
               </Text>
-              {uploadedFiles.length > 0 && (
-                <div style={{ marginTop: 20, textAlign: 'left', maxWidth: 600 }}>
-                  <Title level={5}>已上传的文件：</Title>
-                  {uploadedFiles.map((file, index) => (
-                    <Card key={index} size="small" style={{ marginBottom: 8 }}>
-                      <FileExcelOutlined style={{ marginRight: 8, color: '#52c41a' }} />
-                      <Text strong>{file.file_name}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: '12px' }}>
-                        上传时间: {file.upload_time}
-                      </Text>
-                    </Card>
-                  ))}
-                </div>
-              )}
             </div>
           )}
           
           {messages.map((msg, index) => renderMessage(msg, index))}
           <div ref={messagesEndRef} />
         </div>
-      </Content>
+          </Content>
 
-      <Footer className="app-footer">
+          <Footer className="app-footer">
         <div className="input-container">
           <TextArea
             value={inputValue}
@@ -496,7 +631,9 @@ function App() {
             </Button>
           </div>
         </div>
-      </Footer>
+          </Footer>
+        </Layout>
+      </Layout>
     </Layout>
   );
 }

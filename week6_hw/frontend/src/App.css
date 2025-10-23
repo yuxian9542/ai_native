@@ -4,6 +4,35 @@
   flex-direction: column;
 }
 
+/* 文件侧边栏样式 */
+.file-sidebar {
+  background: #fff;
+  border-right: 1px solid #f0f0f0;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+.sidebar-header {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.file-list-container {
+  flex: 1;
+  overflow-y: auto;
+  height: calc(100vh - 200px);
+}
+
+.file-list-container .ant-list-item {
+  border-bottom: 1px solid #f5f5f5;
+}
+
+.file-list-container .ant-list-item:hover {
+  background-color: #f5f5f5;
+}
+
+.file-list-container .ant-list-item:last-child {
+  border-bottom: none;
+}
+
 .app-header {
   display: flex;
   justify-content: space-between;

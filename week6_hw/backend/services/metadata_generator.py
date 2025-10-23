@@ -30,14 +30,25 @@ class MetadataGenerator:
         Returns:
             文件元数据对象
         """
-        # 读取处理后的CSV
-        df = pd.read_csv(processed_path)
+        # 读取处理后的Excel
+        df = pd.read_excel(processed_path)
+        
+        # 确保路径是绝对路径
+        from pathlib import Path
+        file_path_abs = str(Path(file_path).resolve())
+        processed_path_abs = str(Path(processed_path).resolve())
         
         # 生成摘要
         summary = await self._generate_summary(file_name, df)
         
         # 生成列信息
         columns = await self._generate_column_info(df)
+        
+        # 生成新增字段
+        headers = df.columns.tolist()
+        first_5_rows = df.head(5).to_dict('records')
+        last_5_rows = df.tail(5).to_dict('records')
+        column_unique_values = self._extract_unique_values(df)
         
         # 生成embedding向量
         embedding_text = self._prepare_embedding_text(file_name, summary, columns)
@@ -47,11 +58,15 @@ class MetadataGenerator:
         metadata = FileMetadata(
             file_id=str(uuid.uuid4()),
             file_name=file_name,
-            file_path=file_path,
-            processed_path=processed_path,
+            file_path=file_path_abs,  # 原始文件绝对路径
+            processed_path=processed_path_abs,  # 处理后文件绝对路径
             summary=summary,
             columns=columns,
             embedding=embedding,
+            headers=headers,
+            first_5_rows=first_5_rows,
+            last_5_rows=last_5_rows,
+            column_unique_values=column_unique_values,
             created_at=datetime.now(),
             updated_at=datetime.now()
         )
@@ -217,6 +232,28 @@ class MetadataGenerator:
 列描述: {column_descriptions}
 """
         return text
+    
+    def _extract_unique_values(self, df: pd.DataFrame) -> Dict[str, List[str]]:
+        """
+        提取每列的唯一值（最多20个）
+        
+        Args:
+            df: DataFrame
+            
+        Returns:
+            每列唯一值的字典
+        """
+        column_unique_values = {}
+        
+        for col in df.columns:
+            # 获取唯一值，转换为字符串，去除空值
+            unique_vals = df[col].dropna().unique()
+            unique_vals_str = [str(val) for val in unique_vals]
+            
+            # 限制最多20个唯一值
+            column_unique_values[col] = unique_vals_str[:20]
+        
+        return column_unique_values
 
 
 # 全局实例

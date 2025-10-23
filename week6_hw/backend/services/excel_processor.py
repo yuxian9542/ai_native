@@ -16,11 +16,102 @@ class ExcelProcessor:
     
     async def process_excel(self, file_path: str, output_path: str) -> Dict[str, Any]:
         """
-        处理Excel文件
+        处理Excel文件（支持多工作表）
         
         Args:
             file_path: 输入Excel文件路径
-            output_path: 输出CSV文件路径
+            output_path: 输出Excel文件路径
+            
+        Returns:
+            处理日志信息
+        """
+        # 加载工作簿
+        wb = openpyxl.load_workbook(file_path)
+        sheet_names = wb.sheetnames
+        
+        # 如果只有一个工作表，使用原有逻辑
+        if len(sheet_names) == 1:
+            return await self._process_single_sheet(file_path, output_path, sheet_names[0])
+        
+        # 多个工作表，处理每个工作表
+        processed_sheets = {}
+        total_log = {
+            "total_sheets": len(sheet_names),
+            "processed_sheets": 0,
+            "skipped_rows": 0,
+            "header_row": 0,
+            "merged_cells_count": 0,
+            "final_rows": 0,
+            "final_columns": 0,
+            "sheet_details": {}
+        }
+        
+        # 创建输出工作簿
+        output_wb = openpyxl.Workbook()
+        output_wb.remove(output_wb.active)  # 删除默认工作表
+        
+        for sheet_name in sheet_names:
+            try:
+                print(f"处理工作表: {sheet_name}")
+                
+                # 处理单个工作表
+                sheet_log = await self._process_single_sheet(file_path, None, sheet_name)
+                
+                # 读取处理后的数据
+                df = pd.read_excel(file_path, sheet_name=sheet_name)
+                
+                # 应用相同的处理逻辑
+                df = self._clean_dataframe(df)
+                
+                # 添加到输出工作簿
+                ws = output_wb.create_sheet(title=sheet_name)
+                
+                # 写入表头
+                for col_idx, col_name in enumerate(df.columns, 1):
+                    ws.cell(row=1, column=col_idx, value=col_name)
+                
+                # 写入数据
+                for row_idx, row_data in enumerate(df.values, 2):
+                    for col_idx, value in enumerate(row_data, 1):
+                        ws.cell(row=row_idx, column=col_idx, value=value)
+                
+                # 记录工作表信息
+                processed_sheets[sheet_name] = {
+                    "rows": len(df),
+                    "columns": len(df.columns),
+                    "status": "success"
+                }
+                
+                total_log["processed_sheets"] += 1
+                total_log["final_rows"] += len(df)
+                total_log["final_columns"] = max(total_log["final_columns"], len(df.columns))
+                total_log["sheet_details"][sheet_name] = sheet_log
+                
+            except Exception as e:
+                print(f"处理工作表 {sheet_name} 失败: {e}")
+                processed_sheets[sheet_name] = {
+                    "rows": 0,
+                    "columns": 0,
+                    "status": "error",
+                    "error": str(e)
+                }
+        
+        # 保存处理后的Excel文件
+        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+        output_wb.save(output_path)
+        
+        total_log["processed_sheets_info"] = processed_sheets
+        
+        return total_log
+    
+    async def _process_single_sheet(self, file_path: str, output_path: str, sheet_name: str) -> Dict[str, Any]:
+        """
+        处理单个工作表（原有逻辑）
+        
+        Args:
+            file_path: 输入Excel文件路径
+            output_path: 输出Excel文件路径
+            sheet_name: 工作表名称
             
         Returns:
             处理日志信息
@@ -34,13 +125,13 @@ class ExcelProcessor:
         }
         
         # 1. 识别无关行
-        skip_rows, header_row = await self._identify_irrelevant_rows(file_path)
+        skip_rows, header_row = await self._identify_irrelevant_rows(file_path, sheet_name)
         log["skipped_rows"] = len(skip_rows)
         log["header_row"] = header_row
         
         # 2. 处理合并单元格和多级表头
         wb = openpyxl.load_workbook(file_path)
-        ws = wb.active
+        ws = wb[sheet_name]
         
         # 统计合并单元格
         log["merged_cells_count"] = len(ws.merged_cells.ranges)
@@ -48,19 +139,23 @@ class ExcelProcessor:
         # 拆分合并单元格
         self._unmerge_cells(ws)
         
-        # 3. 生成列名（处理多级表头）
-        column_names = self._merge_multi_level_headers(ws, header_row)
-        
-        # 4. 读取数据
+        # 3. 读取数据
         df = pd.read_excel(
             file_path,
+            sheet_name=sheet_name,
             skiprows=skip_rows,
             header=None if header_row in skip_rows else 0
         )
         
-        # 如果表头被跳过了，需要手动设置列名
-        if column_names:
-            df.columns = column_names[:len(df.columns)]
+        # 4. 处理列名
+        if header_row in skip_rows:
+            # 如果表头被跳过了，使用默认列名
+            df.columns = [f"Column_{i}" for i in range(len(df.columns))]
+        else:
+            # 如果表头没有被跳过，pandas会自动使用第一行作为列名
+            # 清理列名，确保它们是字符串且唯一
+            df.columns = [str(col).strip() if col is not None else f"Column_{i}" 
+                         for i, col in enumerate(df.columns)]
         
         # 5. 清理数据
         df = self._clean_dataframe(df)
@@ -68,24 +163,26 @@ class ExcelProcessor:
         log["final_rows"] = len(df)
         log["final_columns"] = len(df.columns)
         
-        # 6. 保存为CSV
-        Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(output_path, index=False, encoding='utf-8-sig')
+        # 6. 保存为Excel（如果指定了输出路径）
+        if output_path:
+            Path(output_path).parent.mkdir(parents=True, exist_ok=True)
+            df.to_excel(output_path, index=False, engine='openpyxl')
         
         return log
     
-    async def _identify_irrelevant_rows(self, file_path: str) -> Tuple[List[int], int]:
+    async def _identify_irrelevant_rows(self, file_path: str, sheet_name: str = None) -> Tuple[List[int], int]:
         """
         使用GPT-4识别无关行
         
         Args:
             file_path: Excel文件路径
+            sheet_name: 工作表名称（可选）
             
         Returns:
             (要跳过的行号列表, 表头行号)
         """
         # 读取前20行
-        df_sample = pd.read_excel(file_path, header=None, nrows=20)
+        df_sample = pd.read_excel(file_path, sheet_name=sheet_name, header=None, nrows=20)
         sample_text = df_sample.to_string()
         
         prompt = f"""分析以下Excel文件的前20行数据，识别：

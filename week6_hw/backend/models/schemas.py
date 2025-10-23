@@ -20,12 +20,17 @@ class FileMetadata(BaseModel):
     """文件元数据模型"""
     file_id: str
     file_name: str
-    file_path: str
-    processed_path: str
+    file_path: str  # 原始文件绝对路径
+    processed_path: str  # 处理后文件绝对路径
     summary: str
     columns: List[ColumnInfo]
     embedding: Optional[List[float]] = None
     tags: List[str] = Field(default_factory=list)
+    # 新增字段用于代码生成
+    headers: List[str] = Field(default_factory=list)  # 列名列表
+    first_5_rows: List[Dict[str, Any]] = Field(default_factory=list)  # 前5行数据
+    last_5_rows: List[Dict[str, Any]] = Field(default_factory=list)  # 后5行数据
+    column_unique_values: Dict[str, List[str]] = Field(default_factory=dict)  # 每列最多20个唯一值
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
 

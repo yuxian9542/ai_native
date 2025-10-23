@@ -109,6 +109,25 @@ class ESClient:
             return result["hits"]["hits"]
         except:
             return []
+    
+    async def delete_document(self, doc_id: str) -> bool:
+        """
+        删除文档
+        
+        Args:
+            doc_id: 文档ID
+            
+        Returns:
+            是否删除成功
+        """
+        try:
+            result = await self.client.delete(
+                index=self.index_name,
+                id=doc_id
+            )
+            return result["result"] == "deleted"
+        except Exception as e:
+            raise Exception(f"删除文档失败: {str(e)}")
 
 
 # 全局实例

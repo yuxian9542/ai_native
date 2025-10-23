@@ -11,6 +11,7 @@ from backend.services.file_retriever import file_retriever
 from backend.services.code_generator import code_generator
 from backend.services.unified_code_executor import unified_code_executor
 from backend.utils.es_client import es_client
+from backend.utils.logger import logger
 
 
 class ConnectionManager:
@@ -127,31 +128,237 @@ async def process_message(client_id: str, message: dict):
             "content": "正在生成分析代码..."
         })
         
-        # 5. 生成代码
-        code_result = await code_generator.generate_code(content, best_file)
-        
-        # 6. 发送代码
-        await manager.send_message(client_id, {
-            "type": "code_generated",
-            "content": {
-                "code": code_result.code,
-                "used_columns": code_result.used_columns,
-                "analysis_type": code_result.analysis_type
-            }
-        })
-        
-        # 7. 发送状态：正在执行
-        await manager.send_message(client_id, {
-            "type": "status",
-            "content": "正在执行分析..."
-        })
-        
-        # 8. 获取CSV文件路径
+        # 5. 获取Excel文件路径
         file_doc = await es_client.get_document(best_file.file_id)
-        csv_path = file_doc["processed_path"]
+        excel_path = file_doc["processed_path"]
         
-        # 9. 执行代码
-        exec_result = await unified_code_executor.execute_code(code_result.code, csv_path)
+        # 6. 带重试的代码生成和执行
+        max_retries = 3
+        last_error = None
+        
+        for attempt in range(max_retries):
+            try:
+                # 生成代码（第一次使用原始问题，后续包含错误信息）
+                if attempt == 0:
+                    code_result = await code_generator.generate_code(content, best_file)
+                else:
+                    code_result = await code_generator.generate_code_with_retry(
+                        content, best_file, max_retries=1
+                    )
+                
+                # 记录代码生成
+                logger.log_code_generation(
+                    best_file.file_id,
+                    content,
+                    code_result.code,
+                    code_result.used_columns,
+                    code_result.analysis_type,
+                    True,
+                    attempt=attempt + 1
+                )
+                
+                # 发送代码
+                await manager.send_message(client_id, {
+                    "type": "code_generated",
+                    "content": {
+                        "code": code_result.code,
+                        "used_columns": code_result.used_columns,
+                        "analysis_type": code_result.analysis_type,
+                        "attempt": attempt + 1,
+                        "max_attempts": max_retries
+                    }
+                })
+                
+                # 发送状态：正在执行
+                await manager.send_message(client_id, {
+                    "type": "status",
+                    "content": f"正在执行分析... (第{attempt + 1}/{max_retries}次尝试)"
+                })
+                
+                # 发送详细执行信息
+                await manager.send_message(client_id, {
+                    "type": "execution_info",
+                    "content": {
+                        "attempt": attempt + 1,
+                        "max_attempts": max_retries,
+                        "code_length": len(code_result.code),
+                        "used_columns": code_result.used_columns,
+                        "analysis_type": code_result.analysis_type
+                    }
+                })
+                
+                # 记录执行开始
+                logger.log_websocket_message(
+                    client_id,
+                    "code_execution_start",
+                    f"Executing code for file {best_file.file_name} (attempt {attempt + 1})",
+                    "status"
+                )
+                
+                # 执行代码
+                import time
+                start_time = time.time()
+                try:
+                    exec_result = await unified_code_executor.execute_code(code_result.code, excel_path)
+                    execution_time = time.time() - start_time
+                    
+                    # 记录执行结果
+                    logger.log_code_execution(
+                        best_file.file_id,
+                        code_result.code,
+                        "virtualenv",
+                        exec_result.success,
+                        exec_result.output,
+                        exec_result.error,
+                        execution_time,
+                        exec_result.image is not None,
+                        attempt=attempt + 1
+                    )
+                    
+                    if exec_result.success:
+                        # 执行成功，跳出重试循环
+                        break
+                    else:
+                        # 执行失败，记录错误并准备重试
+                        last_error = exec_result.error
+                        logger.log_error(
+                            "code_execution_failed_retry",
+                            best_file.file_id,
+                            f"第{attempt + 1}次执行失败: {last_error}",
+                            attempt=attempt + 1
+                        )
+                        
+                        # 发送详细错误信息
+                        await manager.send_message(client_id, {
+                            "type": "execution_error",
+                            "content": {
+                                "attempt": attempt + 1,
+                                "max_attempts": max_retries,
+                                "error": last_error,
+                                "execution_time": execution_time,
+                                "code_length": len(code_result.code)
+                            }
+                        })
+                        
+                        if attempt < max_retries - 1:
+                            # 还有重试机会，发送重试消息
+                            await manager.send_message(client_id, {
+                                "type": "status",
+                                "content": f"执行失败，正在重试... (第{attempt + 2}/{max_retries}次尝试)"
+                            })
+                            
+                            # 发送重试原因
+                            await manager.send_message(client_id, {
+                                "type": "retry_reason",
+                                "content": {
+                                    "reason": "代码执行失败",
+                                    "error_summary": last_error[:200] + "..." if len(last_error) > 200 else last_error,
+                                    "next_attempt": attempt + 2
+                                }
+                            })
+                        else:
+                            # 最后一次尝试也失败了
+                            await manager.send_message(client_id, {
+                                "type": "error",
+                                "content": f"代码执行失败，已重试{max_retries}次。最后错误: {last_error}"
+                            })
+                            return
+                            
+                except Exception as e:
+                    execution_time = time.time() - start_time
+                    last_error = str(e)
+                    
+                    # 记录执行异常
+                    logger.log_code_execution(
+                        best_file.file_id,
+                        code_result.code,
+                        "virtualenv",
+                        False,
+                        None,
+                        last_error,
+                        execution_time,
+                        False,
+                        attempt=attempt + 1
+                    )
+                    
+                    # 发送详细异常信息
+                    await manager.send_message(client_id, {
+                        "type": "execution_exception",
+                        "content": {
+                            "attempt": attempt + 1,
+                            "max_attempts": max_retries,
+                            "exception": last_error,
+                            "execution_time": execution_time,
+                            "code_length": len(code_result.code) if 'code_result' in locals() else 0
+                        }
+                    })
+                    
+                    if attempt < max_retries - 1:
+                        # 还有重试机会
+                        await manager.send_message(client_id, {
+                            "type": "status",
+                            "content": f"执行异常，正在重试... (第{attempt + 2}/{max_retries}次尝试)"
+                        })
+                        
+                        # 发送重试原因
+                        await manager.send_message(client_id, {
+                            "type": "retry_reason",
+                            "content": {
+                                "reason": "代码执行异常",
+                                "error_summary": last_error[:200] + "..." if len(last_error) > 200 else last_error,
+                                "next_attempt": attempt + 2
+                            }
+                        })
+                    else:
+                        # 最后一次尝试也失败了
+                        await manager.send_message(client_id, {
+                            "type": "error",
+                            "content": f"代码执行异常，已重试{max_retries}次。最后异常: {last_error}"
+                        })
+                        return
+                        
+            except Exception as e:
+                # 代码生成失败
+                last_error = f"代码生成失败: {str(e)}"
+                logger.log_error(
+                    "code_generation_failed_retry",
+                    best_file.file_id,
+                    f"第{attempt + 1}次代码生成失败: {last_error}",
+                    attempt=attempt + 1
+                )
+                
+                # 发送代码生成失败信息
+                await manager.send_message(client_id, {
+                    "type": "code_generation_error",
+                    "content": {
+                        "attempt": attempt + 1,
+                        "max_attempts": max_retries,
+                        "error": last_error,
+                        "file_id": best_file.file_id
+                    }
+                })
+                
+                if attempt < max_retries - 1:
+                    await manager.send_message(client_id, {
+                        "type": "status",
+                        "content": f"代码生成失败，正在重试... (第{attempt + 2}/{max_retries}次尝试)"
+                    })
+                    
+                    # 发送重试原因
+                    await manager.send_message(client_id, {
+                        "type": "retry_reason",
+                        "content": {
+                            "reason": "代码生成失败",
+                            "error_summary": last_error[:200] + "..." if len(last_error) > 200 else last_error,
+                            "next_attempt": attempt + 2
+                        }
+                    })
+                else:
+                    await manager.send_message(client_id, {
+                        "type": "error",
+                        "content": f"代码生成失败，已重试{max_retries}次。最后错误: {last_error}"
+                    })
+                    return
         
         # 10. 发送最终结果
         if exec_result.success:
