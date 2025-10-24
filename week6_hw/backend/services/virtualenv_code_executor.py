@@ -18,7 +18,15 @@ class VirtualEnvCodeExecutor:
     """虚拟环境代码执行器"""
     
     def __init__(self):
-        self.python_executable = sys.executable
+        # 尝试使用.ai_native虚拟环境，如果不存在则使用当前Python
+        ai_native_python = Path(__file__).parent.parent.parent / ".ai_native" / "Scripts" / "python.exe"
+        if ai_native_python.exists():
+            self.python_executable = str(ai_native_python)
+            print(f"使用.ai_native虚拟环境: {self.python_executable}")
+        else:
+            self.python_executable = sys.executable
+            print(f"使用当前Python环境: {self.python_executable}")
+        
         self.work_dir = Path(settings.output_dir).resolve() / "code_execution"
         self.work_dir.mkdir(parents=True, exist_ok=True)
         

@@ -9,6 +9,7 @@ import {
   CodeOutlined,
   BarChartOutlined,
   CheckCircleOutlined,
+  ExclamationCircleOutlined,
   CloseCircleOutlined,
   UploadOutlined,
   FileExcelOutlined,
@@ -118,8 +119,17 @@ function App() {
   const handleServerMessage = (data) => {
     setMessages(prev => [...prev, { type: data.type, content: data.content, from: 'server' }]);
     
+    // 调试日志
+    console.log(`收到服务器消息: ${data.type}`, data);
+    
     // 如果是最终结果或错误，取消处理状态
-    if (data.type === 'analysis_complete' || data.type === 'error') {
+    if (data.type === 'analysis_complete' || 
+        data.type === 'error' || 
+        data.type === 'code_generation_error' ||
+        data.type === 'execution_error' ||
+        data.type === 'execution_exception' ||
+        data.type === 'execution_success') {
+      console.log('重置处理状态为 false');
       setIsProcessing(false);
     }
   };
@@ -129,6 +139,11 @@ function App() {
     if (!isConnected) {
       message.error('未连接到服务器');
       return;
+    }
+
+    // 如果正在处理，显示中断提示
+    if (isProcessing) {
+      message.info('正在中断当前任务，开始处理新问题...');
     }
 
     // 添加用户消息
@@ -142,6 +157,15 @@ function App() {
 
     setInputValue('');
     setIsProcessing(true);
+    
+    // 添加超时保护，确保处理状态能够重置
+    setTimeout(() => {
+      if (isProcessing) {
+        console.warn('处理超时，自动重置处理状态');
+        setIsProcessing(false);
+        message.warning('处理超时，请重试');
+      }
+    }, 60000); // 60秒超时
   };
 
   const toggleVoiceInput = () => {
@@ -325,6 +349,67 @@ function App() {
           </Card>
         );
 
+      case 'data_analysis':
+        return (
+          <Card 
+            key={index} 
+            className="message-card"
+            title={<><BarChartOutlined /> 数据分析</>}
+            size="small"
+          >
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>需要的数据：</Text>
+              <div style={{ marginTop: 8, padding: 8, background: '#f0f5ff', borderRadius: 4 }}>
+                <div><Text type="secondary">表格：</Text> {msg.content.required_data.tables?.join(', ') || '未知'}</div>
+                <div><Text type="secondary">列：</Text> {msg.content.required_data.columns?.join(', ') || '未知'}</div>
+                <div><Text type="secondary">数据类型：</Text> {msg.content.required_data.data_types?.join(', ') || '未知'}</div>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              <Text strong>需要的函数：</Text>
+              <div style={{ marginTop: 8 }}>
+                {msg.content.required_functions?.map((func, i) => (
+                  <Tag key={i} color="blue" style={{ marginRight: 4, marginBottom: 4 }}>
+                    {func}
+                  </Tag>
+                ))}
+              </div>
+            </div>
+
+            {msg.content.data_values && Object.keys(msg.content.data_values).length > 0 && (
+              <div style={{ marginBottom: 12 }}>
+                <Text strong>具体数据数值：</Text>
+                <div style={{ marginTop: 8, padding: 8, background: '#f6ffed', borderRadius: 4 }}>
+                  {Object.entries(msg.content.data_values).map(([column, values]) => (
+                    <div key={column} style={{ marginBottom: 4 }}>
+                      <Text type="secondary">{column}：</Text>
+                      <Text code style={{ fontSize: '12px' }}>
+                        {Array.isArray(values) ? values.slice(0, 5).join(', ') + (values.length > 5 ? '...' : '') : String(values)}
+                      </Text>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {msg.content.analysis_explanation && (
+              <div>
+                <Text strong>分析解释：</Text>
+                <div style={{ 
+                  marginTop: 8, 
+                  padding: 8, 
+                  background: '#fff7e6', 
+                  borderRadius: 4,
+                  border: '1px solid #ffd591'
+                }}>
+                  <Text>{msg.content.analysis_explanation}</Text>
+                </div>
+              </div>
+            )}
+          </Card>
+        );
+
       case 'code_generated':
         return (
           <Card 
@@ -342,6 +427,56 @@ function App() {
             >
               {msg.content.code}
             </SyntaxHighlighter>
+          </Card>
+        );
+
+      case 'execution_success':
+        return (
+          <Card 
+            key={index} 
+            className="message-card"
+            title={<><CheckCircleOutlined /> 代码执行成功</>}
+            size="small"
+          >
+            <Tag color="green">执行成功</Tag>
+            <Tag color="blue">第{msg.content.attempt}次尝试</Tag>
+            <Tag color="orange">耗时: {msg.content.execution_time?.toFixed(2)}秒</Tag>
+            {msg.content.image_generated && <Tag color="purple">已生成图表</Tag>}
+            <div style={{ marginTop: 8 }}>
+              <Text type="success">✅ 代码执行完成，正在生成分析结果...</Text>
+            </div>
+          </Card>
+        );
+
+      case 'execution_error':
+        return (
+          <Card 
+            key={index} 
+            className="message-card"
+            title={<><ExclamationCircleOutlined /> 代码执行失败</>}
+            size="small"
+          >
+            <Tag color="red">执行失败</Tag>
+            <Tag color="blue">第{msg.content.attempt}次尝试</Tag>
+            <Tag color="orange">耗时: {msg.content.execution_time?.toFixed(2)}秒</Tag>
+            <Tag color="purple">代码长度: {msg.content.code_length}字符</Tag>
+            <div style={{ marginTop: 12 }}>
+              <Text type="danger">❌ 执行错误详情：</Text>
+              <div style={{ 
+                marginTop: 8, 
+                padding: 12, 
+                background: '#fff2f0', 
+                borderRadius: 4,
+                border: '1px solid #ffccc7',
+                fontFamily: 'monospace',
+                fontSize: '12px',
+                whiteSpace: 'pre-wrap',
+                maxHeight: '300px',
+                overflow: 'auto'
+              }}>
+                {msg.content.error}
+              </div>
+            </div>
           </Card>
         );
 
@@ -389,10 +524,35 @@ function App() {
               <div style={{ marginTop: 8 }}>
                 <Text type="secondary">使用文件：</Text> {msg.content.used_file}
                 <br />
+                <Text type="secondary">工作表：</Text> {msg.content.full_data_trace?.sheet_name || '未知'}
+                <br />
                 <Text type="secondary">使用列：</Text> {msg.content.used_columns.join(', ')}
                 <br />
                 <Text type="secondary">文件描述：</Text> {msg.content.file_summary}
               </div>
+              
+              {/* 完整数据溯源 */}
+              {msg.content.full_data_trace && msg.content.full_data_trace.column_data && (
+                <div style={{ marginTop: 12 }}>
+                  <Text strong>所用列的完整数值：</Text>
+                  {Object.entries(msg.content.full_data_trace.column_data).map(([column, data]) => (
+                    <div key={column} style={{ marginTop: 8, padding: 8, background: '#fff', borderRadius: 4, border: '1px solid #d9d9d9' }}>
+                      <Text strong style={{ color: '#1890ff' }}>{column}</Text>
+                      <div style={{ marginTop: 4 }}>
+                        <Text type="secondary" style={{ fontSize: '12px' }}>
+                          共 {data.total_unique_count} 个唯一值
+                        </Text>
+                      </div>
+                      <div style={{ marginTop: 4, maxHeight: '100px', overflowY: 'auto' }}>
+                        <Text code style={{ fontSize: '11px', lineHeight: '1.4' }}>
+                          {data.unique_values.slice(0, 20).join(', ')}
+                          {data.unique_values.length > 20 && '...'}
+                        </Text>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Card>
         );

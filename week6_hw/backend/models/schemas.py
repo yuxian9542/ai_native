@@ -42,6 +42,9 @@ class FileSearchResult(BaseModel):
     summary: str
     score: float
     columns: List[ColumnInfo]
+    processed_file_path: Optional[str] = None  # 处理后文件路径
+    sheet_name: Optional[str] = None  # 工作表名称
+    metadata: Optional[Dict[str, Any]] = None  # 元数据
 
 
 class CodeGenerationResult(BaseModel):
@@ -50,6 +53,7 @@ class CodeGenerationResult(BaseModel):
     used_columns: List[str]
     analysis_type: str
     expected_output: str
+    data_analysis: Optional[Dict[str, Any]] = None  # 数据分析结果
 
 
 class CodeExecutionResult(BaseModel):

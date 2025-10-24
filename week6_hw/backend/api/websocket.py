@@ -19,18 +19,22 @@ class ConnectionManager:
     
     def __init__(self):
         self.active_connections: Dict[str, WebSocket] = {}
+        self.processing_tasks: Dict[str, bool] = {}  # 跟踪每个客户端的处理状态
     
     async def connect(self, websocket: WebSocket) -> str:
         """接受连接"""
         await websocket.accept()
         client_id = str(uuid.uuid4())
         self.active_connections[client_id] = websocket
+        self.processing_tasks[client_id] = False
         return client_id
     
     def disconnect(self, client_id: str):
         """断开连接"""
         if client_id in self.active_connections:
             del self.active_connections[client_id]
+        if client_id in self.processing_tasks:
+            del self.processing_tasks[client_id]
     
     async def send_message(self, client_id: str, message: dict):
         """发送消息"""
@@ -38,6 +42,14 @@ class ConnectionManager:
             await self.active_connections[client_id].send_text(
                 json.dumps(message, ensure_ascii=False)
             )
+    
+    def is_processing(self, client_id: str) -> bool:
+        """检查客户端是否正在处理任务"""
+        return self.processing_tasks.get(client_id, False)
+    
+    def set_processing(self, client_id: str, processing: bool):
+        """设置客户端处理状态"""
+        self.processing_tasks[client_id] = processing
 
 
 manager = ConnectionManager()
@@ -88,6 +100,16 @@ async def process_message(client_id: str, message: dict):
             })
             return
         
+        # 检查是否正在处理任务
+        if manager.is_processing(client_id):
+            await manager.send_message(client_id, {
+                "type": "status",
+                "content": "正在中断当前任务，开始处理新问题..."
+            })
+        
+        # 设置处理状态
+        manager.set_processing(client_id, True)
+        
         # 1. 发送状态：正在检索
         await manager.send_message(client_id, {
             "type": "status",
@@ -102,6 +124,7 @@ async def process_message(client_id: str, message: dict):
                 "type": "error",
                 "content": "未找到相关数据文件，请先上传Excel文件"
             })
+            manager.set_processing(client_id, False)
             return
         
         # 3. 发送检索结果
@@ -132,42 +155,91 @@ async def process_message(client_id: str, message: dict):
         file_doc = await es_client.get_document(best_file.file_id)
         excel_path = file_doc["processed_path"]
         
-        # 6. 带重试的代码生成和执行
+        # 6. 获取数据溯源信息（在代码执行前）
+        data_trace = get_data_trace_from_loaded_data(best_file, content)
+        
+        # 7. 代码生成和执行（带重试）
         max_retries = 3
         last_error = None
+        exec_result = None
+
+        # 先生成代码
+        code_result = await code_generator.generate_code(content, best_file)
         
+        # 记录代码生成
+        logger.log_code_generation(
+            best_file.file_id,
+            content,
+            code_result.code,
+            code_result.used_columns,
+            code_result.analysis_type,
+            True,
+            attempt=1
+        )
+        
+        # 发送数据分析结果（如果存在）
+        if code_result.data_analysis:
+            await manager.send_message(client_id, {
+                "type": "data_analysis",
+                "content": {
+                    "required_data": code_result.data_analysis.get("required_data", {}),
+                    "required_functions": code_result.data_analysis.get("required_functions", []),
+                    "data_values": code_result.data_analysis.get("data_values", {}),
+                    "analysis_explanation": code_result.data_analysis.get("analysis_explanation", "")
+                }
+            })
+        
+        # 发送代码
+        await manager.send_message(client_id, {
+            "type": "code_generated",
+            "content": {
+                "code": code_result.code,
+                "used_columns": code_result.used_columns,
+                "analysis_type": code_result.analysis_type,
+                "attempt": 1,
+                "max_attempts": max_retries
+            }
+        })
+        
+        # 执行代码（带重试和重新生成）
+        last_error = None
         for attempt in range(max_retries):
             try:
-                # 生成代码（第一次使用原始问题，后续包含错误信息）
-                if attempt == 0:
-                    code_result = await code_generator.generate_code(content, best_file)
-                else:
+                # 如果不是第一次尝试，重新生成代码
+                if attempt > 0 and last_error:
+                    await manager.send_message(client_id, {
+                        "type": "status",
+                        "content": f"执行失败，正在重新生成代码... (第{attempt + 1}/{max_retries}次尝试)"
+                    })
+                    
+                    # 使用错误信息重新生成代码
                     code_result = await code_generator.generate_code_with_retry(
-                        content, best_file, max_retries=1
+                        content, best_file, max_retries=1, error_message=last_error
                     )
-                
-                # 记录代码生成
-                logger.log_code_generation(
-                    best_file.file_id,
-                    content,
-                    code_result.code,
-                    code_result.used_columns,
-                    code_result.analysis_type,
-                    True,
-                    attempt=attempt + 1
-                )
-                
-                # 发送代码
-                await manager.send_message(client_id, {
-                    "type": "code_generated",
-                    "content": {
-                        "code": code_result.code,
-                        "used_columns": code_result.used_columns,
-                        "analysis_type": code_result.analysis_type,
-                        "attempt": attempt + 1,
-                        "max_attempts": max_retries
-                    }
-                })
+                    
+                    # 记录代码重新生成
+                    logger.log_code_generation(
+                        best_file.file_id,
+                        content,
+                        code_result.code,
+                        code_result.used_columns,
+                        code_result.analysis_type,
+                        True,
+                        attempt=attempt + 1
+                    )
+                    
+                    # 发送重新生成的代码
+                    await manager.send_message(client_id, {
+                        "type": "code_generated",
+                        "content": {
+                            "code": code_result.code,
+                            "used_columns": code_result.used_columns,
+                            "analysis_type": code_result.analysis_type,
+                            "attempt": attempt + 1,
+                            "max_attempts": max_retries,
+                            "is_retry": True
+                        }
+                    })
                 
                 # 发送状态：正在执行
                 await manager.send_message(client_id, {
@@ -216,7 +288,24 @@ async def process_message(client_id: str, message: dict):
                     )
                     
                     if exec_result.success:
-                        # 执行成功，跳出重试循环
+                        # 执行成功，立即发送成功状态并跳出重试循环
+                        await manager.send_message(client_id, {
+                            "type": "status",
+                            "content": f"✅ 代码执行成功！(第{attempt + 1}次尝试)"
+                        })
+                        
+                        # 发送执行成功信息
+                        await manager.send_message(client_id, {
+                            "type": "execution_success",
+                            "content": {
+                                "attempt": attempt + 1,
+                                "execution_time": execution_time,
+                                "output_length": len(exec_result.output) if exec_result.output else 0,
+                                "image_generated": exec_result.image is not None
+                            }
+                        })
+                        
+                        # 跳出重试循环
                         break
                     else:
                         # 执行失败，记录错误并准备重试
@@ -362,6 +451,16 @@ async def process_message(client_id: str, message: dict):
         
         # 10. 发送最终结果
         if exec_result.success:
+            # 更新数据溯源信息，使用实际使用的列
+            data_trace["used_columns"] = code_result.used_columns
+            # 只保留实际使用的列的数据
+            filtered_column_data = {}
+            for col_name in code_result.used_columns:
+                if col_name in data_trace["column_data"]:
+                    filtered_column_data[col_name] = data_trace["column_data"][col_name]
+            data_trace["column_data"] = filtered_column_data
+            full_data_trace = data_trace
+            
             await manager.send_message(client_id, {
                 "type": "analysis_complete",
                 "content": {
@@ -371,7 +470,8 @@ async def process_message(client_id: str, message: dict):
                     "used_file": best_file.file_name,
                     "used_columns": code_result.used_columns,
                     "code": code_result.code,
-                    "file_summary": best_file.summary
+                    "file_summary": best_file.summary,
+                    "full_data_trace": full_data_trace  # 添加完整数据溯源
                 }
             })
         else:
@@ -380,9 +480,160 @@ async def process_message(client_id: str, message: dict):
                 "content": exec_result.error
             })
         
+        # 重置处理状态
+        manager.set_processing(client_id, False)
+        
     except Exception as e:
         await manager.send_message(client_id, {
             "type": "error",
             "content": f"处理失败: {str(e)}"
         })
+        # 重置处理状态
+        manager.set_processing(client_id, False)
+
+
+def get_data_trace_from_loaded_data(file_info, question):
+    """
+    从已加载的数据获取数据溯源信息（不查询Elasticsearch）
+    
+    Args:
+        file_info: 文件信息
+        question: 用户问题
+        
+    Returns:
+        数据溯源信息
+    """
+    try:
+        # 基于文件信息和问题预测可能使用的列
+        predicted_columns = predict_used_columns(file_info, question)
+        
+        data_trace = {
+            "file_name": file_info.file_name,
+            "sheet_name": file_info.sheet_name,
+            "used_columns": predicted_columns,
+            "column_data": {}
+        }
+        
+        # 从文件信息的列数据中获取信息
+        for col in file_info.columns[:5]:  # 最多处理5列
+            if col.name in predicted_columns:
+                data_trace["column_data"][col.name] = {
+                    "unique_values": col.sample_values[:20] if col.sample_values else [],
+                    "total_unique_count": col.unique_count,
+                    "description": col.description,
+                    "data_type": col.type,
+                    "null_count": col.null_count
+                }
+        
+        return data_trace
+        
+    except Exception as e:
+        print(f"获取数据溯源信息失败: {e}")
+        return {
+            "file_name": file_info.file_name,
+            "sheet_name": file_info.sheet_name,
+            "used_columns": [],
+            "column_data": {},
+            "note": f"数据溯源信息获取失败: {str(e)[:100]}"
+        }
+
+def predict_used_columns(file_info, question):
+    """
+    基于用户问题和文件信息预测可能使用的列
+    
+    Args:
+        file_info: 文件信息
+        question: 用户问题
+        
+    Returns:
+        预测的列名列表
+    """
+    predicted_columns = []
+    question_lower = question.lower()
+    
+    # 基于问题关键词预测列
+    for col in file_info.columns:
+        col_name_lower = col.name.lower()
+        col_desc_lower = col.description.lower()
+        
+        # 检查列名或描述是否与问题相关
+        if any(keyword in col_name_lower or keyword in col_desc_lower 
+               for keyword in ['编号', 'id', '名称', 'name', '发电', 'power', '电量', '量', '时间', 'time', '日期', 'date']):
+            predicted_columns.append(col.name)
+    
+    # 如果没找到相关列，返回前3列
+    if not predicted_columns:
+        predicted_columns = [col.name for col in file_info.columns[:3]]
+    
+    return predicted_columns
+
+async def get_full_data_trace(file_info, used_columns):
+    """
+    获取完整的数据溯源信息
+    
+    Args:
+        file_info: 文件信息
+        used_columns: 使用的列名列表
+        
+    Returns:
+        完整的数据溯源信息
+    """
+    try:
+        # 从ES获取完整的文件元数据
+        file_doc = await es_client.get_document(file_info.file_id)
+        
+        full_data_trace = {
+            "file_name": file_info.file_name,
+            "sheet_name": file_info.sheet_name,
+            "used_columns": used_columns,
+            "column_data": {}
+        }
+        
+        # 获取每列的完整数据（限制处理时间）
+        for column in used_columns[:5]:  # 最多处理5列，避免超时
+            try:
+                if column in file_doc.get("column_unique_values", {}):
+                    # 获取该列的所有唯一值
+                    column_values = file_doc["column_unique_values"][column]
+                    # 限制数量以提高性能
+                    limited_values = column_values[:30] if len(column_values) > 30 else column_values
+                    full_data_trace["column_data"][column] = {
+                        "unique_values": limited_values,
+                        "total_unique_count": len(column_values),
+                        "description": f"列 '{column}' 的完整数据值"
+                    }
+                else:
+                    # 如果没有唯一值信息，尝试从样本数据获取
+                    sample_data = file_doc.get("sample_data", [])
+                    column_values = []
+                    for row in sample_data[:20]:  # 只处理前20行样本数据
+                        if column in row and row[column] is not None:
+                            column_values.append(str(row[column]))
+                    
+                    # 去重并限制数量
+                    unique_values = list(set(column_values))[:20]  # 最多20个唯一值
+                    full_data_trace["column_data"][column] = {
+                        "unique_values": unique_values,
+                        "total_unique_count": len(unique_values),
+                        "description": f"列 '{column}' 的样本数据值"
+                    }
+            except Exception as e:
+                # 如果处理某列时出错，跳过该列
+                full_data_trace["column_data"][column] = {
+                    "unique_values": [],
+                    "total_unique_count": 0,
+                    "description": f"列 '{column}' 数据处理出错: {str(e)[:100]}"
+                }
+        
+        return full_data_trace
+        
+    except Exception as e:
+        print(f"获取完整数据溯源失败: {e}")
+        return {
+            "file_name": file_info.file_name,
+            "sheet_name": file_info.sheet_name,
+            "used_columns": used_columns,
+            "column_data": {},
+            "error": f"获取数据溯源失败: {str(e)}"
+        }
 

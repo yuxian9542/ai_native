@@ -13,7 +13,6 @@ EXCEL_METADATA_MAPPING = {
             },
             "file_name": {
                 "type": "text",
-                "analyzer": "ik_max_word",
                 "fields": {
                     "keyword": {
                         "type": "keyword"
@@ -27,22 +26,19 @@ EXCEL_METADATA_MAPPING = {
                 "type": "keyword"
             },
             "summary": {
-                "type": "text",
-                "analyzer": "ik_smart"
+                "type": "text"
             },
             "columns": {
                 "type": "nested",
                 "properties": {
                     "name": {
-                        "type": "text",
-                        "analyzer": "ik_max_word"
+                        "type": "text"
                     },
                     "type": {
                         "type": "keyword"
                     },
                     "description": {
-                        "type": "text",
-                        "analyzer": "ik_smart"
+                        "type": "text"
                     },
                     "sample_values": {
                         "type": "keyword"
@@ -58,6 +54,7 @@ EXCEL_METADATA_MAPPING = {
             "embedding": {
                 "type": "dense_vector",
                 "dims": 1536,
+                "index": True,
                 "similarity": "cosine"
             },
             "tags": {
@@ -68,11 +65,11 @@ EXCEL_METADATA_MAPPING = {
             },
             "first_5_rows": {
                 "type": "object",
-                "enabled": False  # 存储但不索引
+                "dynamic": False  # 不创建动态字段映射
             },
             "last_5_rows": {
                 "type": "object",
-                "enabled": False  # 存储但不索引
+                "dynamic": False  # 不创建动态字段映射
             },
             "column_unique_values": {
                 "type": "object",

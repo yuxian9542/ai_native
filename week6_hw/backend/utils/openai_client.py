@@ -116,6 +116,9 @@ class OpenAIClient:
                 # 修复控制字符问题
                 json_text = self._fix_json_control_chars(json_text)
                 
+                # 修复未正确引用的字符串值（特别是code字段）
+                json_text = self._fix_unquoted_strings(json_text)
+                
                 return json.loads(json_text)
         except:
             pass
@@ -140,6 +143,37 @@ class OpenAIClient:
         
         # 匹配双引号内的字符串
         json_text = re.sub(r'"([^"]*)"', fix_string, json_text)
+        
+        return json_text
+    
+    def _fix_unquoted_strings(self, json_text: str) -> str:
+        """修复未正确引用的字符串值"""
+        import re
+        
+        # 修复 "code": 后面跟着换行和代码的情况
+        # 匹配 "code": \n"""代码内容"""
+        code_pattern = r'"code":\s*\n?"""(.*?)"""'
+        if re.search(code_pattern, json_text, re.DOTALL):
+            def replace_code(match):
+                code_content = match.group(1)
+                # 转义特殊字符
+                escaped_code = code_content.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+                return f'"code": "{escaped_code}"'
+            
+            json_text = re.sub(code_pattern, replace_code, json_text, flags=re.DOTALL)
+        
+        # 修复其他可能的未引用字符串
+        # 匹配 "field": 后面跟着未引用的字符串
+        unquoted_pattern = r'"(\w+)":\s*\n?"""(.*?)"""'
+        if re.search(unquoted_pattern, json_text, re.DOTALL):
+            def replace_unquoted(match):
+                field_name = match.group(1)
+                field_value = match.group(2)
+                # 转义特殊字符
+                escaped_value = field_value.replace('\\', '\\\\').replace('"', '\\"').replace('\n', '\\n').replace('\r', '\\r').replace('\t', '\\t')
+                return f'"{field_name}": "{escaped_value}"'
+            
+            json_text = re.sub(unquoted_pattern, replace_unquoted, json_text, flags=re.DOTALL)
         
         return json_text
 

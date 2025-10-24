@@ -49,13 +49,37 @@ class ESClient:
             document: 文档内容
         """
         try:
+            # 清理文档中的NaN值
+            cleaned_document = self._clean_document_for_elasticsearch(document)
+            
             await self.client.index(
                 index=self.index_name,
                 id=doc_id,
-                document=document
+                document=cleaned_document
             )
         except Exception as e:
             raise Exception(f"索引文档失败: {str(e)}")
+    
+    def _clean_document_for_elasticsearch(self, obj: Any) -> Any:
+        """
+        递归清理文档中的NaN值，确保Elasticsearch可以正确索引
+        
+        Args:
+            obj: 要清理的对象
+            
+        Returns:
+            清理后的对象
+        """
+        import math
+        
+        if isinstance(obj, dict):
+            return {key: self._clean_document_for_elasticsearch(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [self._clean_document_for_elasticsearch(item) for item in obj]
+        elif isinstance(obj, float) and math.isnan(obj):
+            return None  # 将NaN转换为None，Elasticsearch会忽略None值
+        else:
+            return obj
     
     async def get_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
         """
